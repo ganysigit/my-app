@@ -42,7 +42,6 @@ export async function createDiscordClientSafe(options: {
     const client = new Client({
       intents: options.intents,
       ws: {
-        compress: false,
         version: 10,
       },
     });

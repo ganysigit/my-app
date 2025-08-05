@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
       const user = validatedData.member?.user || validatedData.user;
 
       if (action === 'fix') {
+        if (!issueId) {
+          return NextResponse.json(
+            { error: 'Issue ID is required for fix action' },
+            { status: 400 }
+          );
+        }
+        
         // Handle "Mark as Fixed" button
         const result = await SyncService.handleDiscordInteraction(
           issueId,

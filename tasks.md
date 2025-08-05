@@ -53,7 +53,19 @@
 - [x] Validate webhook endpoint setup
 - [x] Test Discord integration components
 
-## Phase 9: Final Cleanup ✅
+## Phase 9: Discord.js Integration ✅
+- [x] Replace SimpleDiscordService with DiscordService in API routes
+- [x] Update cron sync route to use DiscordService
+- [x] Update Discord connect route to use DiscordService
+- [x] Update sync service to use DiscordService
+- [x] Resolve Discord.js module bundling issues in Next.js
+- [x] Create DiscordServerService for server-only Discord.js usage
+- [x] Update all API routes to use DiscordServerService
+- [x] Configure Next.js externals and fallbacks for Discord.js
+- [x] Test Discord.js integration and bot connectivity
+- [x] Verify bot appears online in Discord
+
+## Phase 10: Final Cleanup ✅
 - [x] Remove any temporary test files
 - [x] Ensure all dependencies are properly installed
 - [x] Verify environment variable documentation

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { discordChannels, type NewDiscordChannel } from '@/lib/db/schema';
-import { SimpleDiscordService } from '@/lib/services/discord-simple';
+import { DiscordServerService } from '@/lib/services/discord-server';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -59,13 +59,12 @@ export async function POST(request: NextRequest) {
       id: 'test',
       ...validatedData,
       isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
     };
 
-    const discordService = new SimpleDiscordService();
-    await discordService.initialize(validatedData.botToken);
-    const isValid = await discordService.testConnection(validatedData.channelId);
+    const discordService = new DiscordServerService(testChannel);
+    const isValid = await discordService.testConnection();
 
     if (!isValid) {
       return NextResponse.json(
@@ -131,9 +130,8 @@ export async function PUT(request: NextRequest) {
         ...updateData,
       };
 
-      const discordService = new SimpleDiscordService();
-      await discordService.initialize(updateData.botToken || existingChannel[0].botToken);
-      const isValid = await discordService.testConnection(updateData.channelId || existingChannel[0].channelId);
+      const discordService = new DiscordServerService(testChannel);
+      const isValid = await discordService.testConnection();
 
       if (!isValid) {
         return NextResponse.json(

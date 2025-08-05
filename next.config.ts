@@ -34,12 +34,36 @@ const nextConfig: NextConfig = {
       )
     );
 
+    // Externalize Discord.js and related packages for server-side only
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'discord.js': 'commonjs discord.js',
+        '@discordjs/ws': 'commonjs @discordjs/ws',
+        '@discordjs/rest': 'commonjs @discordjs/rest',
+        'zlib-sync': 'commonjs zlib-sync'
+      });
+    } else {
+      // For client-side, completely ignore Discord.js
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'discord.js': false,
+        '@discordjs/ws': false,
+        '@discordjs/rest': false,
+        'zlib-sync': false
+      };
+    }
+
     // Add fallbacks for other optional dependencies
     config.resolve.fallback = {
       ...config.resolve.fallback,
       'erlpack': false,
       'node:zlib': false,
       'node:util': false,
+      'discord.js': false,
+      '@discordjs/ws': false,
+      '@discordjs/rest': false,
+      'zlib-sync': false
     };
 
     return config;

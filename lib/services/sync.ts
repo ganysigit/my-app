@@ -12,10 +12,11 @@ import {
   type Issue,
   type NewIssue,
   type NewDiscordMessage,
-  type NewSyncLog
+  type NewSyncLog,
+  type NotionConnection
 } from '../db/schema';
 import { NotionService, type NotionIssue } from './notion';
-import { SimpleDiscordService } from './discord-simple';
+import { DiscordServerService } from './discord-server';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface SyncResult {
@@ -107,7 +108,7 @@ export class SyncService {
 
       // Initialize services
       const notionService = new NotionService(notionConnection);
-      const discordService = new SimpleDiscordService(discordChannel);
+      const discordService = new DiscordServerService(discordChannel);
 
       // Test connections
       const [notionOk, discordOk] = await Promise.all([
@@ -126,8 +127,8 @@ export class SyncService {
       const notionIssues = await notionService.fetchOpenIssues();
       console.log(`Fetched ${notionIssues.length} open issues from Notion`);
 
-      // Filter by project if specified
-      const filteredIssues = mapping.projectFilter 
+      // Filter by project if specified (but not 'all')
+      const filteredIssues = mapping.projectFilter && mapping.projectFilter !== 'all'
         ? notionIssues.filter(issue => issue.project === mapping.projectFilter)
         : notionIssues;
 
@@ -196,7 +197,7 @@ export class SyncService {
   private static async createIssue(
     notionIssue: NotionIssue,
     notionConnection: NotionConnection,
-    discordService: SimpleDiscordService,
+    discordService: DiscordServerService,
     discordChannelId: string
   ): Promise<void> {
     // Save issue to database
@@ -236,7 +237,7 @@ export class SyncService {
   private static async updateIssue(
     notionIssue: NotionIssue,
     notionConnection: NotionConnection,
-    discordService: SimpleDiscordService,
+    discordService: DiscordServerService,
     discordChannelId: string
   ): Promise<void> {
     // Update issue in database
@@ -275,7 +276,7 @@ export class SyncService {
   /**
    * Remove an issue (no longer open or doesn't match filter)
    */
-  private static async removeIssue(issue: Issue, discordService: SimpleDiscordService): Promise<void> {
+  private static async removeIssue(issue: Issue, discordService: DiscordServerService): Promise<void> {
     // Get Discord messages for this issue
     const discordMessageList = await db
       .select()
@@ -368,6 +369,7 @@ export class SyncService {
         message,
         errorDetails: errorDetails || null,
         issuesProcessed,
+        createdAt: new Date().toISOString(),
       };
       
       await db.insert(syncLogs).values(logEntry);
@@ -459,11 +461,11 @@ export class SyncService {
           id: mappingData.id,
           notionConnectionId: mappingData.notionConnection.id,
           discordChannelId: mappingData.discordChannel.id,
-          projectFilter: mappingData.projectFilter,
+          projectFilter: mappingData.projectFilter || null,
           isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          lastSyncAt: mappingData.lastSyncAt
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lastSyncAt: mappingData.lastSyncAt ? new Date(mappingData.lastSyncAt).toISOString() : null
         },
         mappingData.notionConnection,
         mappingData.discordChannel

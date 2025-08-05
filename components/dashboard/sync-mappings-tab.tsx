@@ -60,6 +60,7 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
   const [mappings, setMappings] = useState<SyncMapping[]>([]);
   const [notionConnections, setNotionConnections] = useState<NotionConnection[]>([]);
   const [discordChannels, setDiscordChannels] = useState<DiscordChannel[]>([]);
+  const [projects, setProjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMapping, setEditingMapping] = useState<SyncMapping | null>(null);
@@ -109,6 +110,18 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
       console.error('Error fetching connections:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects || []);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
     }
   };
 
@@ -232,12 +245,21 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
 
   const openCreateDialog = () => {
     setEditingMapping(null);
-    reset({ notionConnectionId: '', discordChannelId: '', projectFilter: '' });
+    reset({ notionConnectionId: '', discordChannelId: '', projectFilter: 'all' });
     setIsDialogOpen(true);
   };
 
   useEffect(() => {
-    Promise.all([fetchMappings(), fetchConnections()]);
+    const fetchData = async () => {
+      await Promise.all([
+        fetchConnections(),
+        fetchMappings(),
+        fetchProjects(),
+      ]);
+      setIsLoading(false);
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -330,10 +352,24 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="projectFilter">Project Filter</Label>
-                <Input
-                  id="projectFilter"
-                  placeholder="e.g., Frontend, Backend, Mobile"
-                  {...register('projectFilter')}
+                <Controller
+                  name="projectFilter"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Projects</SelectItem>
+                        {projects.map((project) => (
+                          <SelectItem key={project} value={project}>
+                            {project}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
                 {errors.projectFilter && (
                   <p className="text-sm text-red-600">{errors.projectFilter.message}</p>

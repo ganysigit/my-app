@@ -151,7 +151,7 @@ export class DiscordService {
       embed.setURL(issue.url);
     }
 
-    const row = new ActionRowBuilder<ButtonBuilder>()
+    const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setLabel('View in Notion')
@@ -208,7 +208,7 @@ export class DiscordService {
       embed.setURL(issue.url);
     }
 
-    const row = new ActionRowBuilder<ButtonBuilder>()
+    const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setLabel('View in Notion')

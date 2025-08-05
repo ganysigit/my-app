@@ -8,6 +8,10 @@ export interface NotionIssue {
   project: string;
   bugName: string;
   bugDescription: string;
+  title: string; // Issue title
+  description: string; // Issue description
+  priority: string; // Issue priority
+  assignee: string; // Issue assignee
   attachedFiles: string[];
   severity: string;
   url: string;
@@ -247,6 +251,10 @@ export class NotionService {
         project: project || '',
         bugName,
         bugDescription: bugDescription || '',
+        title: bugName, // Use bugName as title
+        description: bugDescription || '', // Use bugDescription as description
+        priority: severity || 'medium', // Use severity as priority
+        assignee: '', // Default empty assignee (can be extracted from properties if available)
         attachedFiles,
         severity: severity || '',
         url: (page.url as string) || '',

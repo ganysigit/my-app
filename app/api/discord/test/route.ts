@@ -12,9 +12,6 @@ export async function GET(request: NextRequest) {
     // Create a minimal client to test the import
     const client = new Client({
       intents: [GatewayIntentBits.Guilds],
-      ws: {
-        compress: false, // Disable compression to avoid zlib-sync
-      },
     });
     
     // Don't actually connect, just test if the client can be created

@@ -8,6 +8,13 @@
 - **UI Components**: Custom components with Tailwind CSS styling
 - **External APIs**: Notion API v1 and Discord API v10
 - **Deployment**: Vercel with cron job support
+- **Discord Integration**: Discord.js v14.16.3 is installed and configured for bot functionality
+- DiscordServerService created for server-only Discord.js usage to avoid Next.js bundling issues
+- Uses conditional imports and eval() to prevent Next.js from analyzing Discord.js modules
+- WebSocket compression disabled to avoid zlib-sync dependency issues
+- Next.js config updated with proper externals and fallbacks for Discord.js
+- Bot token validation and WebSocket connections are properly implemented
+- All API routes updated to use DiscordServerService instead of SimpleDiscordService
 
 ### Code Patterns & Conventions
 - Use TypeScript for all files with strict type checking

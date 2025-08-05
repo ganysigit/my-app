@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { issues, syncLogs, notionConnections } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { NotionService } from '@/lib/services/notion';
+import { v4 as uuidv4 } from 'uuid';
 
 // Discord interaction types
 const InteractionType = {
@@ -58,9 +59,9 @@ export async function POST(request: NextRequest) {
         
         try {
           // Find the issue in our database
-          const issue = await db.select().from(issues).where(eq(issues.issueId, issueId)).limit(1);
+          const issueData = await db.select().from(issues).where(eq(issues.id, issueId)).limit(1);
           
-          if (issue.length === 0) {
+          if (issueData.length === 0) {
             return NextResponse.json({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
@@ -70,43 +71,46 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          const issueData = issue[0];
+          const currentIssue = issueData[0];
           
           // Get the Notion connection for this issue
           const notionConnection = await db.select()
             .from(notionConnections)
-            .where(eq(notionConnections.id, issueData.notionConnectionId))
+            .where(eq(notionConnections.id, currentIssue.notionConnectionId))
             .limit(1);
           
           if (notionConnection.length === 0) {
             throw new Error('Notion connection not found');
           }
           
+          // Use the notionPageId if available, otherwise fall back to the issue ID
+          const notionPageId = currentIssue.notionPageId || currentIssue.id;
+          
           // Update status in Notion
           const notionService = new NotionService(notionConnection[0]);
-          await notionService.updateIssueStatus(issueData.notionPageId, 'Fixed');
+          await notionService.updateIssueStatus(notionPageId, 'Fixed');
           
           // Update status in our database
           await db.update(issues)
             .set({ 
               status: 'Fixed',
-              updatedAt: new Date()
+              updatedAt: new Date().toISOString()
             })
-            .where(eq(issues.issueId, issueId));
+            .where(eq(issues.id, issueId));
           
           // Log the sync operation
           await db.insert(syncLogs).values({
+            id: uuidv4(),
             operation: 'discord_mark_fixed',
-            issueId: issueId,
             status: 'success',
             details: `Issue marked as fixed via Discord button by user ${interaction.member?.user?.username || 'unknown'}`,
-            createdAt: new Date()
+            createdAt: new Date().toISOString()
           });
 
           return NextResponse.json({
             type: InteractionResponseType.UPDATE_MESSAGE,
             data: {
-              content: `✅ Issue "${issueData.bugName}" has been marked as fixed!`,
+              content: `✅ Issue "${currentIssue.bugName}" has been marked as fixed!`,
               embeds: [],
               components: []
             }
@@ -117,11 +121,11 @@ export async function POST(request: NextRequest) {
           
           // Log the error
           await db.insert(syncLogs).values({
+            id: uuidv4(),
             operation: 'discord_mark_fixed',
-            issueId: issueId,
             status: 'error',
             details: `Error marking issue as fixed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            createdAt: new Date()
+            createdAt: new Date().toISOString()
           });
           
           return NextResponse.json({

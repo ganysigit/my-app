@@ -31,6 +31,7 @@ export const syncMappings = sqliteTable('sync_mappings', {
   discordChannelId: text('discord_channel_id').notNull().references(() => discordChannels.id, { onDelete: 'cascade' }),
   projectFilter: text('project_filter'), // Filter by project name, null means all projects
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  lastSyncAt: text('last_sync_at'),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 });
@@ -38,11 +39,17 @@ export const syncMappings = sqliteTable('sync_mappings', {
 // Issues cache for tracking and deduplication
 export const issues = sqliteTable('issues', {
   id: text('id').primaryKey(), // This will be the issue-id from Notion
+  issueId: text('issue_id'), // Additional issue identifier
+  notionPageId: text('notion_page_id'), // Notion page ID
   notionConnectionId: text('notion_connection_id').notNull().references(() => notionConnections.id, { onDelete: 'cascade' }),
   status: text('status').notNull(), // open, fixed, etc.
   project: text('project'),
   bugName: text('bug_name').notNull(),
   bugDescription: text('bug_description'),
+  title: text('title'), // Issue title
+  description: text('description'), // Issue description
+  priority: text('priority'), // Issue priority
+  assignee: text('assignee'), // Issue assignee
   attachedFiles: text('attached_files'), // JSON string of file URLs
   severity: text('severity'),
   notionUrl: text('notion_url'),
@@ -64,9 +71,11 @@ export const discordMessages = sqliteTable('discord_messages', {
 export const syncLogs = sqliteTable('sync_logs', {
   id: text('id').primaryKey(),
   syncMappingId: text('sync_mapping_id').references(() => syncMappings.id, { onDelete: 'set null' }),
+  mappingId: text('mapping_id').references(() => syncMappings.id, { onDelete: 'set null' }),
   operation: text('operation').notNull(), // 'fetch', 'create', 'update', 'delete'
   status: text('status').notNull(), // 'success', 'error', 'warning'
   message: text('message'),
+  details: text('details'), // Additional details field
   errorDetails: text('error_details'),
   issuesProcessed: integer('issues_processed').default(0),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),

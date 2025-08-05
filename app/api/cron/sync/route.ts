@@ -3,8 +3,9 @@ import { db } from '@/lib/db';
 import { syncMappings, notionConnections, discordChannels, issues, syncLogs } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NotionService } from '@/lib/services/notion';
-import { SimpleDiscordService } from '@/lib/services/discord-simple';
+import { DiscordServerService } from '@/lib/services/discord-server';
 import { SyncService } from '@/lib/services/sync';
+import { v4 as uuidv4 } from 'uuid';
 
 // This endpoint can be called by external cron services like Vercel Cron or GitHub Actions
 export async function GET(request: NextRequest) {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
 
         // Initialize services
         const notionService = new NotionService(notionConnection[0]);
-        const discordService = new SimpleDiscordService(discordChannel[0]);
+        const discordService = new DiscordServerService(discordChannel[0]);
         const syncService = new SyncService();
 
         // Perform sync
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
           notionConnection: notionConnection[0],
           discordChannel: discordChannel[0],
           projectFilter: mapping.projectFilter,
-          lastSyncAt: mapping.lastSyncAt
+          lastSyncAt: mapping.lastSyncAt ? new Date(mapping.lastSyncAt) : null
         });
 
         totalSynced += syncResult.syncedCount;
@@ -89,16 +90,17 @@ export async function GET(request: NextRequest) {
 
         // Log successful sync
         await db.insert(syncLogs).values({
+          id: uuidv4(),
           operation: 'scheduled_sync',
-          mappingId: mapping.id,
+          syncMappingId: mapping.id,
           status: 'success',
           details: `Synced ${syncResult.syncedCount} issues`,
-          createdAt: new Date()
+          createdAt: new Date().toISOString()
         });
 
         // Update last sync time
         await db.update(syncMappings)
-          .set({ lastSyncAt: new Date() })
+          .set({ lastSyncAt: new Date().toISOString() })
           .where(eq(syncMappings.id, mapping.id));
 
       } catch (error) {
@@ -110,13 +112,14 @@ export async function GET(request: NextRequest) {
           error: error instanceof Error ? error.message : 'Unknown error'
         });
 
-        // Log failed sync
+        // Log error
         await db.insert(syncLogs).values({
+          id: uuidv4(),
           operation: 'scheduled_sync',
-          mappingId: mapping.id,
+          syncMappingId: mapping.id,
           status: 'error',
-          details: `Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          createdAt: new Date()
+          details: error instanceof Error ? error.message : 'Unknown error',
+          createdAt: new Date().toISOString()
         });
       }
     }
@@ -135,10 +138,11 @@ export async function GET(request: NextRequest) {
     
     // Log the error
     await db.insert(syncLogs).values({
+      id: uuidv4(),
       operation: 'scheduled_sync',
       status: 'error',
       details: `Scheduled sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     });
     
     return NextResponse.json(

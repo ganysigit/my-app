@@ -1,33 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { SimpleDiscordService } from '@/lib/services/discord-simple';
+import { DiscordServerService } from '@/lib/services/discord-server';
+import { DiscordChannel } from '@/lib/db/schema';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const token = process.env.DISCORD_BOT_TOKEN;
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Discord bot token not configured' },
-        { status: 500 }
-      );
-    }
+    // Create a test channel object for testing
+    const testChannel: DiscordChannel = {
+      id: 'test-channel-id',
+      guildId: 'test-guild-id',
+      channelId: 'test-channel-id',
+      botToken: process.env.DISCORD_BOT_TOKEN || 'test-token',
+      name: 'Test Channel',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    // Initialize Discord service
-    const discordService = new SimpleDiscordService();
-    await discordService.initialize(token);
+    const discordService = new DiscordServerService(testChannel);
+    await discordService.initialize();
     
-    return NextResponse.json({
-      success: true,
-      message: 'Successfully connected to Discord using simple client'
+    return Response.json({ 
+      success: true, 
+      message: 'Discord bot connected successfully with DiscordServerService!' 
     });
-    
   } catch (error) {
     console.error('Discord connection error:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to connect to Discord',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+    return Response.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
