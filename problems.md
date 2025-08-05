@@ -267,3 +267,22 @@ The bot should now appear online in Discord and maintain proper connectivity for
 - This ensures that existing issues without Discord messages get posted during sync operations
 
 **Result:** After the fix, running a manual sync successfully created Discord messages for all 14 existing issues. The sync status now shows 14 issues and 14 Discord messages, with 0 issues without Discord messages.
+
+## Problem 12: Data Mismatch Between Notion Fetch and Requirements ✅ SOLVED
+
+**Issue:** The data fetched from Notion didn't match the requirements specified in `project-requirement.md`. The system was fetching unnecessary fields like `title`, `description`, `priority`, `assignee` that weren't in the 7 required fields, and the project field was empty preventing proper sync filtering.
+
+**Root Cause:** 
+1. The `NotionIssue` interface included extra fields not in requirements
+2. The `parseNotionPage` method was creating duplicate field mappings
+3. The issues API was mapping `bugName` to `name` and `bugDescription` to `description`
+4. Database schema included extra columns not in requirements
+
+**Solution:** 
+1. Updated `NotionIssue` interface to only include the 7 required fields: `id`, `status`, `project`, `bugName`, `bugDescription`, `attachedFiles`, `severity`
+2. Removed duplicate field mappings from `parseNotionPage` method
+3. Updated `DiscordServerService.formatIssueMessage` to use correct field names
+4. Fixed issues API route to return `bugName` and `bugDescription` instead of `name` and `description`
+5. Removed extra columns from database schema
+
+**Result:** Data now matches requirements exactly with only the 7 required fields being fetched and displayed. API responses are clean and consistent with the specification.

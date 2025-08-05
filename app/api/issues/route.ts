@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
          issueId: issues.id, // Use id as issueId for compatibility
          status: issues.status,
          project: issues.project,
-         name: issues.bugName,
-         description: issues.bugDescription,
+         bugName: issues.bugName,
+         bugDescription: issues.bugDescription,
          attachedFiles: issues.attachedFiles,
          severity: issues.severity,
          notionUrl: issues.notionUrl,

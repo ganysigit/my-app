@@ -247,18 +247,18 @@ export class DiscordServerService {
    */
   formatIssueMessage(issue: NotionIssue): string {
     const status = issue.status || 'Unknown';
-    const priority = issue.priority || 'Medium';
-    const assignee = issue.assignee || 'Unassigned';
+    const severity = issue.severity || 'Medium';
+    const project = issue.project || 'No Project';
     
-    let message = `**${issue.title}**\n`;
+    let message = `**${issue.bugName}**\n`;
     message += `📋 **Status:** ${status}\n`;
-    message += `🔥 **Priority:** ${priority}\n`;
-    message += `👤 **Assignee:** ${assignee}\n`;
+    message += `🔥 **Severity:** ${severity}\n`;
+    message += `📁 **Project:** ${project}\n`;
     
-    if (issue.description) {
-      const truncatedDesc = issue.description.length > 200 
-        ? issue.description.substring(0, 200) + '...' 
-        : issue.description;
+    if (issue.bugDescription) {
+      const truncatedDesc = issue.bugDescription.length > 200 
+        ? issue.bugDescription.substring(0, 200) + '...' 
+        : issue.bugDescription;
       message += `📝 **Description:** ${truncatedDesc}\n`;
     }
     

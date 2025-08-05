@@ -46,10 +46,6 @@ export const issues = sqliteTable('issues', {
   project: text('project'),
   bugName: text('bug_name').notNull(),
   bugDescription: text('bug_description'),
-  title: text('title'), // Issue title
-  description: text('description'), // Issue description
-  priority: text('priority'), // Issue priority
-  assignee: text('assignee'), // Issue assignee
   attachedFiles: text('attached_files'), // JSON string of file URLs
   severity: text('severity'),
   notionUrl: text('notion_url'),
