@@ -273,8 +273,11 @@ export class DiscordServerService {
    * Post a new issue to Discord
    */
   async postIssue(issue: NotionIssue): Promise<string | null> {
+    console.log(`Discord postIssue called for issue: ${issue.id}`);
     const content = this.formatIssueMessage(issue);
+    console.log(`Formatted Discord message content: ${content.substring(0, 100)}...`);
     const result = await this.sendMessage(content);
+    console.log(`Discord sendMessage result:`, result);
     return result?.messageId || null;
   }
 

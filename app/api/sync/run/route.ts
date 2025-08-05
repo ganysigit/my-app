@@ -10,8 +10,10 @@ const runSyncSchema = z.object({
 // POST - Run sync operation
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== SYNC API CALLED ===');
     const body = await request.json();
     const { mappingId } = runSyncSchema.parse(body);
+    console.log('Sync request body:', body);
 
     let result;
 

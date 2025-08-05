@@ -10,7 +10,7 @@ import { Loader2, Play, RefreshCw, Database, GitBranch, AlertCircle, CheckCircle
 import { NotionConnectionsTab } from '@/components/dashboard/notion-connections-tab';
 import { DiscordChannelsTab } from '@/components/dashboard/discord-channels-tab';
 import { SyncMappingsTab } from '@/components/dashboard/sync-mappings-tab';
-import { IssuesDataTable } from '@/components/dashboard/issues-data-table';
+import { IssuesTab } from '@/components/dashboard/issues-tab';
 
 interface DashboardStats {
   totalIssues: number;
@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchStats = async () => {
     try {
@@ -61,6 +62,7 @@ export default function DashboardPage() {
       if (response.ok) {
         setSyncMessage('Sync completed successfully!');
         await fetchStats(); // Refresh stats after sync
+        setRefreshTrigger(prev => prev + 1); // Trigger issues refresh
       } else {
         setSyncMessage(`Sync failed: ${data.error}`);
       }
@@ -315,7 +317,7 @@ export default function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="issues">
-          <IssuesDataTable issues={[]} />
+          <IssuesTab refreshTrigger={refreshTrigger} />
         </TabsContent>
       </Tabs>
     </div>

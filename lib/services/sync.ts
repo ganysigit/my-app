@@ -217,7 +217,10 @@ export class SyncService {
     await db.insert(issues).values(newIssue);
 
     // Post to Discord
+    console.log(`Attempting to post issue ${notionIssue.id} to Discord channel ${discordChannelId}`);
     const messageId = await discordService.postIssue(notionIssue);
+    console.log(`Discord postIssue returned messageId: ${messageId}`);
+    
     if (messageId) {
       const newDiscordMessage: NewDiscordMessage = {
         id: uuidv4(),
@@ -226,6 +229,9 @@ export class SyncService {
         messageId: messageId,
       };
       await db.insert(discordMessages).values(newDiscordMessage);
+      console.log(`Saved Discord message record for issue ${notionIssue.id} with messageId ${messageId}`);
+    } else {
+      console.error(`Failed to post issue ${notionIssue.id} to Discord - no messageId returned`);
     }
 
     console.log(`Created issue ${notionIssue.id}`);
@@ -256,7 +262,7 @@ export class SyncService {
       })
       .where(eq(issues.id, notionIssue.id));
 
-    // Update Discord message
+    // Check if Discord message exists for this issue
     const discordMessage = await db
       .select()
       .from(discordMessages)
@@ -267,7 +273,31 @@ export class SyncService {
       .limit(1);
 
     if (discordMessage.length > 0) {
+      // Update existing Discord message
+      console.log(`Updating Discord message for issue ${notionIssue.id}`);
       await discordService.updateIssue(discordMessage[0].messageId, notionIssue);
+    } else {
+      // Create new Discord message for existing issue that doesn't have one
+      console.log(`Creating Discord message for existing issue ${notionIssue.id}`);
+      const messageId = await discordService.postIssue(notionIssue);
+      console.log(`Discord message created with ID: ${messageId}`);
+      
+      if (messageId) {
+        // Save Discord message record
+        const newDiscordMessage = {
+          id: crypto.randomUUID(),
+          issueId: notionIssue.id,
+          discordChannelId: discordChannelId,
+          messageId: messageId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        await db.insert(discordMessages).values(newDiscordMessage);
+        console.log(`Discord message record saved for issue ${notionIssue.id}`);
+      } else {
+        console.error(`Failed to post Discord message for issue ${notionIssue.id}`);
+      }
     }
 
     console.log(`Updated issue ${notionIssue.id}`);

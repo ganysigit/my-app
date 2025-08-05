@@ -252,3 +252,18 @@ The bot should now appear online in Discord and maintain proper connectivity for
 - Converted `lastSyncAt` string to Date object: `mapping.lastSyncAt ? new Date(mapping.lastSyncAt) : null`
 - Fixed duplicate `.toISOString()` calls
 - All TypeScript compilation errors resolved successfully
+
+## Problem 6: Discord Messages Not Being Posted During Sync (2025-01-05)
+
+**Issue:** Sync operations were completing successfully and processing 14 issues, but no Discord messages were being posted. The `discord_messages` table was empty despite having 14 issues in the database.
+
+**Root Cause:** All issues in the database were created before Discord posting functionality was working properly. During sync, these were treated as "existing issues" and routed to the `updateIssue` method. However, `updateIssue` only updated Discord messages if a Discord message record already existed - it didn't create new Discord messages for existing issues that had never been posted.
+
+**Solution:**
+- Modified `updateIssue` method in `lib/services/sync.ts` to check if a Discord message exists for the issue
+- If no Discord message exists, the method now creates a new Discord message using `discordService.postIssue()`
+- Added proper logging to track Discord message creation vs updates
+- Added database record creation for new Discord messages with proper UUID generation
+- This ensures that existing issues without Discord messages get posted during sync operations
+
+**Result:** After the fix, running a manual sync successfully created Discord messages for all 14 existing issues. The sync status now shows 14 issues and 14 Discord messages, with 0 issues without Discord messages.
