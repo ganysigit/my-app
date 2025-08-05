@@ -1,36 +1,227 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notion-Discord Sync Service
 
-## Getting Started
+A full-stack Next.js application that provides two-way synchronization between Notion databases and Discord channels. The service monitors Notion databases for "open" issues and syncs them to Discord channels, allowing users to update issue statuses directly from Discord.
 
-First, run the development server:
+## Features
+
+- **Multi-Database Support**: Connect multiple Notion databases
+- **Multi-Channel Sync**: Sync to multiple Discord channels with project-based filtering
+- **Two-Way Sync**: Update issue status from Discord back to Notion
+- **Real-time Dashboard**: Monitor connections, sync status, and issue statistics
+- **Filtering**: Only syncs "open" status issues from Notion
+- **Interactive Discord Bot**: Mark issues as "Fixed" directly from Discord
+- **Comprehensive Logging**: Track all sync operations and errors
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (Full-stack)
+- **UI**: shadcn/ui + Tailwind CSS
+- **Database**: SQLite with Drizzle ORM
+- **APIs**: Notion API, Discord API
+- **Deployment**: Compatible with Cloudflare Workers
+
+## Prerequisites
+
+1. **Notion Integration**: Create a Notion integration and get your API key
+2. **Discord Bot**: Create a Discord application and bot
+3. **Node.js**: Version 18 or higher
+
+## Setup Instructions
+
+### 1. Clone and Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd my-app
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.local` and fill in your API credentials:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Notion API Configuration
+NOTION_API_KEY=your_notion_api_key_here
 
-## Learn More
+# Discord Bot Configuration
+DISCORD_BOT_TOKEN=your_discord_bot_token_here
+DISCORD_APPLICATION_ID=your_discord_application_id_here
+DISCORD_PUBLIC_KEY=your_discord_public_key_here
 
-To learn more about Next.js, take a look at the following resources:
+# Database Configuration
+DATABASE_URL=./sqlite.db
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Application Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Database Setup
 
-## Deploy on Vercel
+```bash
+# Generate database schema
+npm run db:generate
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Run migrations
+npm run db:migrate
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4. Notion Database Schema
+
+Your Notion database must have these columns:
+
+- **issue-id** (Title or Text): Unique identifier for each issue
+- **status** (Select): Issue status (must include "open" and "fixed" options)
+- **project** (Select): Project categorization for filtering
+- **bug-name** (Text): Issue title/name
+- **bug-description** (Text): Detailed description
+- **attached-files** (Files): File attachments
+- **severity** (Select): Issue severity level
+
+### 5. Discord Bot Setup
+
+1. Create a Discord application at https://discord.com/developers/applications
+2. Create a bot and get the bot token
+3. Enable "Message Content Intent" in bot settings
+4. Invite the bot to your Discord server with appropriate permissions:
+   - Send Messages
+   - Embed Links
+   - Use Slash Commands
+   - Read Message History
+
+### 6. Run the Application
+
+```bash
+# Development
+npm run dev
+
+# Production build
+npm run build
+npm start
+```
+
+The application will be available at `http://localhost:3000`
+
+## Usage
+
+### 1. Dashboard Access
+
+Navigate to `http://localhost:3000/dashboard` to access the main dashboard.
+
+### 2. Setup Connections
+
+1. **Notion Connections**: Add your Notion database connections
+   - Provide database ID (found in Notion database URL)
+   - Test connection to verify access
+
+2. **Discord Channels**: Add Discord channel connections
+   - Provide channel ID and guild ID
+   - Test connection to verify bot access
+
+### 3. Create Sync Mappings
+
+1. Go to "Sync Mappings" tab
+2. Create mappings between Notion databases and Discord channels
+3. Specify project filters to control which issues sync to which channels
+
+### 4. Monitor Sync Status
+
+- View sync statistics on the Overview tab
+- Monitor individual issues in the Issues tab
+- Check sync logs for troubleshooting
+
+## API Endpoints
+
+### Notion Connections
+- `GET /api/notion/connect` - List connections
+- `POST /api/notion/connect` - Create connection
+- `PUT /api/notion/connect` - Update connection
+- `DELETE /api/notion/connect` - Delete connection
+
+### Discord Channels
+- `GET /api/discord/connect` - List channels
+- `POST /api/discord/connect` - Create channel
+- `PUT /api/discord/connect` - Update channel
+- `DELETE /api/discord/connect` - Delete channel
+
+### Sync Operations
+- `GET /api/sync/mappings` - List sync mappings
+- `POST /api/sync/mappings` - Create mapping
+- `PUT /api/sync/mappings` - Update mapping
+- `DELETE /api/sync/mappings` - Delete mapping
+- `POST /api/sync/run` - Run sync operation
+- `GET /api/sync/run` - Get sync status
+
+### Issues
+- `GET /api/issues` - List issues with filtering
+- `POST /api/issues` - Get issue statistics
+
+### Discord Interactions
+- `POST /api/discord/interactions` - Handle Discord button interactions
+
+## Database Schema
+
+The application uses SQLite with the following tables:
+
+- **notion_connections**: Notion database connections
+- **discord_channels**: Discord channel configurations
+- **sync_mappings**: Mappings between Notion and Discord
+- **issues**: Cached issue data from Notion
+- **discord_messages**: Discord message tracking
+- **sync_logs**: Sync operation logs
+- **settings**: Application configuration
+
+## Deployment
+
+### Cloudflare Workers
+
+This application is compatible with Cloudflare Workers Node.js runtime:
+
+1. Ensure `nodejs_compat` flag is enabled
+2. Use Cloudflare D1 for the database instead of SQLite
+3. Update database configuration in `drizzle.config.ts`
+4. Deploy using Wrangler CLI
+
+### Traditional Hosting
+
+Can be deployed to any Node.js hosting platform:
+- Vercel
+- Netlify
+- Railway
+- DigitalOcean App Platform
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Notion API Errors**: Verify API key and database permissions
+2. **Discord Bot Errors**: Check bot token and server permissions
+3. **Sync Issues**: Review sync logs in the dashboard
+4. **Database Errors**: Ensure migrations are run correctly
+
+### Debug Mode
+
+Set `NODE_ENV=development` for detailed logging.
+
+### Database Management
+
+```bash
+# View database in browser
+npm run db:studio
+
+# Reset database
+rm sqlite.db
+npm run db:migrate
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details.
