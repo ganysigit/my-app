@@ -446,7 +446,10 @@ export function IssuesTab({ refreshTrigger }: IssuesTabProps) {
                 {issues.map((issue) => (
                   <TableRow key={issue.id}>
                     <TableCell className="font-mono text-sm">
-                      {issue.issueId}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{issue.issueId.slice(0, 8)}</span>
+                        <span className="text-muted-foreground">...</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(issue.status)}>

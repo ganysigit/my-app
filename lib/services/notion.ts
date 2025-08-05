@@ -219,10 +219,13 @@ export class NotionService {
     try {
       const properties = page.properties as Record<string, unknown>;
       
-      // Extract issue ID
-      const issueId = await this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'title') || 
-                     await this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'rich_text') ||
-                     (page.id as string);
+      // Extract issue ID from Notion (unique_id type) or generate user-friendly ID
+      let issueId = await this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'unique_id');
+      
+      // If no issue ID found in Notion, generate a user-friendly one
+      if (!issueId) {
+        issueId = this.generateUserFriendlyIssueId(page.id as string, properties);
+      }
       
       // Extract other properties
       const status = await this.extractProperty(properties.status as Record<string, unknown>, 'select');
@@ -257,6 +260,36 @@ export class NotionService {
       console.error('Error parsing Notion page:', error);
       return null;
     }
+  }
+
+  /**
+   * Generate a user-friendly issue ID when none exists in Notion
+   */
+  private generateUserFriendlyIssueId(pageId: string, properties: Record<string, unknown>): string {
+    // Try to create ID based on bug name
+    const bugNameProperty = properties['bug-name'] as Record<string, unknown>;
+    let bugName = '';
+    
+    if (bugNameProperty) {
+      if (bugNameProperty.type === 'title') {
+        bugName = (bugNameProperty.title as any)?.[0]?.plain_text || '';
+      } else if (bugNameProperty.type === 'rich_text') {
+        bugName = (bugNameProperty.rich_text as any)?.[0]?.plain_text || '';
+      }
+    }
+    
+    if (bugName) {
+      // Create ID from bug name: take first 3 words, remove special chars, add short UUID
+      const words = bugName.split(' ').slice(0, 3).join('-')
+        .replace(/[^a-zA-Z0-9-]/g, '')
+        .toUpperCase();
+      const shortId = pageId.split('-')[0].toUpperCase();
+      return `${words}-${shortId}`;
+    }
+    
+    // Fallback: use ISSUE prefix with short UUID
+    const shortId = pageId.split('-')[0].toUpperCase();
+    return `ISSUE-${shortId}`;
   }
 
   /**
@@ -316,6 +349,14 @@ export class NotionService {
         return (property.number as any)?.toString() || '';
       case 'date':
         return (property.date as any)?.start || '';
+      case 'unique_id':
+        // Handle unique_id properties (like issue-id)
+        const uniqueId = (property.unique_id as any);
+        if (uniqueId && uniqueId.number !== null && uniqueId.number !== undefined) {
+          const prefix = uniqueId.prefix || '';
+          return `${prefix}${uniqueId.number}`;
+        }
+        return '';
       case 'relation':
         // For relation properties, fetch the related page title
         const relations = (property.relation as any) || [];

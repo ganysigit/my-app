@@ -314,3 +314,17 @@ The bot should now appear online in Discord and maintain proper connectivity for
   5. Made `getPage` method async to support relation resolution
 - **Result**: Project column now displays human-readable names like "D'Aurelio Import GmbH Contest - 99design" instead of relation IDs
 - **Test Verification**: Manual sync completed successfully and API endpoint `/api/issues` returns proper project names
+
+## Issue: Issue ID Column Shows Generated IDs Instead of Actual Notion unique_id Values ✅ SOLVED
+**Problem**: The Issue ID column was displaying generated user-friendly IDs instead of the actual Notion unique_id values (like ISS1, ISS2, etc.).
+
+**Root Cause**: The `parseNotionPage` method in `notion.ts` was not correctly extracting the `issue-id` property as a `unique_id` type.
+
+**Solution Applied**:
+1. Fixed the `extractProperty` method call in `parseNotionPage` to correctly handle `unique_id` properties
+2. Fixed the count query in the issues API route to include proper joins
+3. Triggered a fresh sync which successfully extracted and used the actual Notion `unique_id` values
+
+**Verification**: After the sync, issues now display proper Notion IDs like ISS57, ISS60, ISS61, ISS71, ISS72, etc. instead of generated IDs.
+
+**Resolution Date**: January 8, 2025

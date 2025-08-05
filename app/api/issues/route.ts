@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { issues, notionConnections } from '@/lib/db/schema';
-import { eq, and, desc, asc, like, or, isNotNull, isNull } from 'drizzle-orm';
+import { eq, and, desc, asc, like, or, isNotNull, isNull, count } from 'drizzle-orm';
 import { z } from 'zod';
 
 const getIssuesSchema = z.object({
@@ -96,8 +96,9 @@ export async function GET(request: NextRequest) {
 
     // Get total count for pagination
     const baseCountQuery = db
-      .select({ count: issues.id })
+      .select({ count: count(issues.id) })
       .from(issues)
+      .innerJoin(notionConnections, eq(issues.notionConnectionId, notionConnections.id))
       .$dynamic();
 
     let countQuery = baseCountQuery;

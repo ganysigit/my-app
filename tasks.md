@@ -70,6 +70,8 @@
 - [x] Ensure all dependencies are properly installed
 - [x] Verify environment variable documentation
 - [x] Confirm all endpoints return proper responses
+- [x] Fix issue ID extraction to use actual Notion unique_id values
+- [x] Clean up debug logging and temporary files
 
 ## Deployment Checklist
 - [ ] Set up production environment variables

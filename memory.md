@@ -89,3 +89,9 @@
 - Verify database operations return expected data structures
 - Check error handling with empty/null database scenarios
 - Validate webhook signature verification works correctly
+
+### Issue ID Extraction (RESOLVED)
+- Notion `unique_id` properties must be extracted using the correct type parameter
+- The `extractProperty` method requires 'unique_id' as the type for Notion unique ID fields
+- Issue IDs now properly display as ISS57, ISS60, etc. instead of generated user-friendly IDs
+- Count queries in API routes must include the same joins as main queries to avoid undefined errors
