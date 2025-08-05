@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { issues } from '@/lib/db/schema';
+import { issues, notionConnections } from '@/lib/db/schema';
 import { eq, and, desc, asc, like, or, isNotNull, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -75,8 +75,10 @@ export async function GET(request: NextRequest) {
          lastSyncedAt: issues.lastSyncedAt,
          createdAt: issues.createdAt,
          updatedAt: issues.updatedAt,
+         notionConnectionName: notionConnections.name,
        })
        .from(issues)
+       .innerJoin(notionConnections, eq(issues.notionConnectionId, notionConnections.id))
        .$dynamic();
 
      let query = baseQuery;

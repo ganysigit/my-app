@@ -286,3 +286,31 @@ The bot should now appear online in Discord and maintain proper connectivity for
 5. Removed extra columns from database schema
 
 **Result:** Data now matches requirements exactly with only the 7 required fields being fetched and displayed. API responses are clean and consistent with the specification.
+
+## Problem 13: Connection Column Showing "..." ✅ SOLVED
+
+**Issue:** The "Connection" column in the issues dashboard was showing "..." instead of the actual Notion connection name.
+
+**Root Cause:** The issues API route (`/api/issues`) was not joining with the `notion_connections` table to retrieve connection names. The `issues-tab.tsx` expected a `notionConnectionName` field but the API didn't provide it.
+
+**Solution:** 
+1. Added `notionConnections` import to the issues API route
+2. Modified the database query to include an inner join with `notion_connections` table
+3. Added `notionConnectionName: notionConnections.name` to the select fields
+
+**Result:** API now returns `"notionConnectionName": "Issue Sync"` and the dashboard displays connection names properly.
+
+## Current Issues
+
+### Issue: Project Column Shows Relation IDs Instead of Names ✅ SOLVED
+- **Status**: Fully Resolved
+- **Description**: The "Project" column was showing relation IDs (e.g., "23ecb636-0e1f-80cd-9a45-e95b34ec7125") instead of human-readable project names.
+- **Root Cause**: The project property in Notion is a "relation" type that references another database. The `parseNotionPage` method was only handling 'select' and 'rich_text' types.
+- **Solution Applied**: 
+  1. Updated `extractProperty` method to handle 'relation' type properties
+  2. Added `fetchRelatedPageTitle` method to retrieve page titles from relation IDs
+  3. Modified `extractProperty` to asynchronously resolve relation IDs to human-readable names
+  4. Updated `parseNotionPage` and `fetchOpenIssues` methods to handle async operations
+  5. Made `getPage` method async to support relation resolution
+- **Result**: Project column now displays human-readable names like "D'Aurelio Import GmbH Contest - 99design" instead of relation IDs
+- **Test Verification**: Manual sync completed successfully and API endpoint `/api/issues` returns proper project names

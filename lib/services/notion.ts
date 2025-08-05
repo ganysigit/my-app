@@ -114,7 +114,7 @@ export class NotionService {
 
       for (const page of response.results) {
         if ('properties' in page) {
-          const issue = this.parseNotionPage(page);
+          const issue = await this.parseNotionPage(page);
           if (issue) {
             issues.push(issue);
           }
@@ -202,7 +202,7 @@ export class NotionService {
       const page = await this.client.pages.retrieve({ page_id: pageId });
       
       if ('properties' in page) {
-        return this.parseNotionPage(page);
+        return await this.parseNotionPage(page);
       }
       
       return null;
@@ -215,23 +215,24 @@ export class NotionService {
   /**
    * Parse a Notion page into our Issue format
    */
-  private parseNotionPage(page: Record<string, unknown>): NotionIssue | null {
+  private async parseNotionPage(page: Record<string, unknown>): Promise<NotionIssue | null> {
     try {
       const properties = page.properties as Record<string, unknown>;
       
       // Extract issue ID
-      const issueId = this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'title') || 
-                     this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'rich_text') ||
+      const issueId = await this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'title') || 
+                     await this.extractProperty(properties['issue-id'] as Record<string, unknown>, 'rich_text') ||
                      (page.id as string);
       
       // Extract other properties
-      const status = this.extractProperty(properties.status as Record<string, unknown>, 'select');
-      const project = this.extractProperty(properties.project as Record<string, unknown>, 'select') || 
-                     this.extractProperty(properties.project as Record<string, unknown>, 'rich_text');
-      const bugName = this.extractProperty(properties['bug-name'] as Record<string, unknown>, 'title') ||
-                     this.extractProperty(properties['bug-name'] as Record<string, unknown>, 'rich_text');
-      const bugDescription = this.extractProperty(properties['bug-description'] as Record<string, unknown>, 'rich_text');
-      const severity = this.extractProperty(properties.severity as Record<string, unknown>, 'select');
+      const status = await this.extractProperty(properties.status as Record<string, unknown>, 'select');
+      const project = await this.extractProperty(properties.project as Record<string, unknown>, 'relation') || 
+                     await this.extractProperty(properties.project as Record<string, unknown>, 'select') || 
+                     await this.extractProperty(properties.project as Record<string, unknown>, 'rich_text');
+      const bugName = await this.extractProperty(properties['bug-name'] as Record<string, unknown>, 'title') ||
+                     await this.extractProperty(properties['bug-name'] as Record<string, unknown>, 'rich_text');
+      const bugDescription = await this.extractProperty(properties['bug-description'] as Record<string, unknown>, 'rich_text');
+      const severity = await this.extractProperty(properties.severity as Record<string, unknown>, 'select');
       
       // Extract attached files
       const attachedFiles = this.extractFiles(properties['attached-files'] as Record<string, unknown>);
@@ -259,9 +260,50 @@ export class NotionService {
   }
 
   /**
+   * Fetch the title of a related page by its ID
+   */
+  private async fetchRelatedPageTitle(pageId: string): Promise<string> {
+    try {
+      const page = await this.client.pages.retrieve({ page_id: pageId });
+      
+      if ('properties' in page) {
+        const properties = page.properties as Record<string, unknown>;
+        
+        // Try to find a title property (common names: title, name, Name, Title)
+        const titleKeys = ['title', 'name', 'Name', 'Title'];
+        
+        for (const key of titleKeys) {
+          if (properties[key]) {
+            const titleProperty = properties[key] as Record<string, unknown>;
+            if (titleProperty.type === 'title') {
+              return (titleProperty.title as any)?.[0]?.plain_text || '';
+            }
+            if (titleProperty.type === 'rich_text') {
+              return (titleProperty.rich_text as any)?.[0]?.plain_text || '';
+            }
+          }
+        }
+        
+        // If no title property found, try to get the first title or rich_text property
+        for (const [key, prop] of Object.entries(properties)) {
+          const property = prop as Record<string, unknown>;
+          if (property.type === 'title') {
+            return (property.title as any)?.[0]?.plain_text || '';
+          }
+        }
+      }
+      
+      return pageId; // Fallback to ID if no title found
+    } catch (error) {
+      console.error(`Error fetching related page title for ${pageId}:`, error);
+      return pageId; // Fallback to ID on error
+    }
+  }
+
+  /**
    * Extract property value based on type
    */
-  private extractProperty(property: Record<string, unknown>, type: string): string {
+  private async extractProperty(property: Record<string, unknown>, type: string): Promise<string> {
     if (!property || property.type !== type) return '';
     
     switch (type) {
@@ -274,6 +316,16 @@ export class NotionService {
         return (property.number as any)?.toString() || '';
       case 'date':
         return (property.date as any)?.start || '';
+      case 'relation':
+        // For relation properties, fetch the related page title
+        const relations = (property.relation as any) || [];
+        if (relations.length > 0) {
+          const relatedPageId = relations[0].id;
+          if (relatedPageId) {
+            return await this.fetchRelatedPageTitle(relatedPageId);
+          }
+        }
+        return '';
       default:
         return '';
     }
