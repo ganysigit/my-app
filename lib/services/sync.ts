@@ -275,7 +275,38 @@ export class SyncService {
     if (discordMessage.length > 0) {
       // Update existing Discord message
       console.log(`Updating Discord message for issue ${notionIssue.id}`);
-      await discordService.updateIssue(discordMessage[0].messageId, notionIssue);
+      const updateSuccess = await discordService.updateIssue(discordMessage[0].messageId, notionIssue);
+      
+      if (!updateSuccess) {
+        // Message no longer exists, remove stale database record and create new message
+        console.log(`Discord message ${discordMessage[0].messageId} no longer exists, removing stale record and creating new message`);
+        
+        // Remove stale Discord message record
+        await db
+          .delete(discordMessages)
+          .where(eq(discordMessages.id, discordMessage[0].id));
+        
+        // Create new Discord message
+        const messageId = await discordService.postIssue(notionIssue);
+        console.log(`New Discord message created with ID: ${messageId}`);
+        
+        if (messageId) {
+          // Save new Discord message record
+          const newDiscordMessage = {
+            id: crypto.randomUUID(),
+            issueId: notionIssue.id,
+            discordChannelId: discordChannelId,
+            messageId: messageId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          
+          await db.insert(discordMessages).values(newDiscordMessage);
+          console.log(`New Discord message record saved for issue ${notionIssue.id}`);
+        } else {
+          console.error(`Failed to create new Discord message for issue ${notionIssue.id}`);
+        }
+      }
     } else {
       // Create new Discord message for existing issue that doesn't have one
       console.log(`Creating Discord message for existing issue ${notionIssue.id}`);

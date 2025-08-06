@@ -311,14 +311,27 @@ export class DiscordServerService {
 
       const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = this.discordModule!;
 
+      // Create a clean Discord embed for issue tracking
       const embed = new EmbedBuilder()
-        .setTitle(issue.bugName)
+        .setTitle(issue.bugName || 'New Issue')
         .setDescription(issue.bugDescription || 'No description provided')
         .setColor(this.getStatusColor(issue.status))
         .addFields(
-          { name: 'Status', value: issue.status || 'Unknown', inline: true },
-          { name: 'Severity', value: issue.severity || 'Not set', inline: true },
-          { name: 'Project', value: issue.project || 'Not assigned', inline: true }
+          { 
+            name: 'Status', 
+            value: issue.status || 'Unknown', 
+            inline: true 
+          },
+          { 
+            name: 'Severity', 
+            value: issue.severity || 'Not set', 
+            inline: true 
+          },
+          { 
+            name: 'Project', 
+            value: issue.project || 'Not assigned', 
+            inline: true 
+          }
         )
         .setTimestamp()
         .setFooter({ text: 'Notion Issue Tracker' });
@@ -369,7 +382,18 @@ export class DiscordServerService {
         return false;
       }
 
-      const message = await textChannel.messages.fetch(messageId);
+      let message;
+      try {
+        message = await textChannel.messages.fetch(messageId);
+      } catch (fetchError: any) {
+        // Handle case where message no longer exists (Discord API error 10008)
+        if (fetchError.code === 10008) {
+          console.warn(`Message ${messageId} no longer exists, will need to create new message`);
+          return false; // Return false to indicate update failed, sync service should handle recreation
+        }
+        throw fetchError; // Re-throw other errors
+      }
+      
       if (!message) {
         console.error('Message not found');
         return false;
@@ -377,14 +401,27 @@ export class DiscordServerService {
 
       const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = this.discordModule!;
 
+      // Create a clean Discord embed for issue tracking
       const embed = new EmbedBuilder()
-        .setTitle(issue.bugName)
+        .setTitle(issue.bugName || 'New Issue')
         .setDescription(issue.bugDescription || 'No description provided')
         .setColor(this.getStatusColor(issue.status))
         .addFields(
-          { name: 'Status', value: issue.status || 'Unknown', inline: true },
-          { name: 'Severity', value: issue.severity || 'Not set', inline: true },
-          { name: 'Project', value: issue.project || 'Not assigned', inline: true }
+          { 
+            name: 'Status', 
+            value: issue.status || 'Unknown', 
+            inline: true 
+          },
+          { 
+            name: 'Severity', 
+            value: issue.severity || 'Not set', 
+            inline: true 
+          },
+          { 
+            name: 'Project', 
+            value: issue.project || 'Not assigned', 
+            inline: true 
+          }
         )
         .setTimestamp()
         .setFooter({ text: 'Notion Issue Tracker' });

@@ -49,7 +49,25 @@
 **Analysis**: Vercel cron jobs work better with instance methods for proper context and state management
 **Solution**: Added instance method `syncMapping()` to SyncService class that internally calls the static method
 
-## Problem 7: SelectItem Empty Value Error ✅ SOLVED
+## Problem 7: Discord Message Sync Failures ✅ SOLVED
+**Date**: Current session
+**Error**: `DiscordAPIError[10008]: Unknown Message` errors during sync operations
+**Analysis**: The sync service was trying to update Discord messages that no longer existed on Discord (likely deleted), but the database still contained references to these stale message IDs. The `updateIssueEmbed` method would fail when trying to fetch non-existent messages.
+**Troubleshooting Steps**:
+1. Examined terminal logs showing repeated "Unknown Message" errors
+2. Analyzed `updateIssueEmbed` function in `discord-server.ts`
+3. Identified that the method didn't handle the case where messages were deleted from Discord
+4. Reviewed sync service logic to understand how message updates were handled
+**Solution**:
+- Modified `updateIssueEmbed` to catch Discord API error 10008 (Unknown Message)
+- Added graceful error handling that returns `false` when message doesn't exist
+- Updated sync service `updateIssue` method to handle failed updates by:
+  - Removing stale database records for non-existent Discord messages
+  - Creating new Discord messages to replace the deleted ones
+  - Saving new message records to the database
+- Verified fix works by running sync operation with no errors and proper message recreation
+
+## Problem 8: SelectItem Empty Value Error ✅ SOLVED
 **Date**: Current session
 **Error**: `A <Select.Item /> must have a value prop that is not an empty string`
 **Analysis**: The shadcn/ui DataTable template had SelectItem components with `value=" "` (space character) which violates the Select component's requirement for non-empty string values. This was causing runtime errors in the browser. The issue was caused by:
