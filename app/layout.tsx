@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,7 +30,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <SidebarProvider
+          style={{
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties}
+        >
+          <AppSidebar variant="inset" />
+          <main className="flex-1">
+            <SidebarTrigger className="fixed top-4 left-4 z-50 md:hidden" />
+            {children}
+          </main>
+        </SidebarProvider>
         <Toaster />
       </body>
     </html>
