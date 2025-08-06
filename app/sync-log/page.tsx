@@ -8,8 +8,14 @@ export default function SyncLogPage() {
   return (
     <SidebarInset className="h-full flex flex-col">
       <SiteHeader />
-      <div className="container mx-auto p-6 flex-1">
-        <SyncLogTab />
+      <div className="flex flex-1 flex-col">
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <SyncLogTab />
+            </div>
+          </div>
+        </div>
       </div>
     </SidebarInset>
   );
