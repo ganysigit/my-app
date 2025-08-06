@@ -321,6 +321,46 @@ The bot should now appear online in Discord and maintain proper connectivity for
 
 **Result:** API now returns `"notionConnectionName": "Issue Sync"` and the dashboard displays connection names properly.
 
+## Problem 14: TypeScript Property Errors in Discord Services ✅ SOLVED
+
+**Issue:** Build failing with multiple TypeScript errors in Discord service files:
+1. Property access errors: "Property 'title' does not exist on type 'NotionIssue'"
+2. WebSocket options errors: "Property 'compress' does not exist in type 'WebSocketOptions'"
+3. Null reference errors: "Object is possibly 'null'"
+4. Channel type errors: "Property 'send' does not exist on type 'TextBasedChannel'"
+5. ActionRowBuilder typing errors: "Type 'ActionRowBuilder<AnyComponentBuilder>' is not assignable"
+
+**Root Cause:** Multiple TypeScript compatibility issues with Discord.js v14 and strict null checks.
+
+**Solution Applied:**
+1. **Property Name Fixes**: Updated all Discord service files to use correct NotionIssue property names:
+   - Changed `issue.title` to `issue.bugName`
+   - Changed `issue.description` to `issue.bugDescription`
+   - Changed `issue.priority` to `issue.severity`
+   - Changed `issue.assignee` to `issue.project`
+
+2. **WebSocket Options**: Removed deprecated `compress: false` property from Discord client configurations
+
+3. **Null Safety**: Added comprehensive null checks for `this.client` in all Discord service methods
+
+4. **Channel Typing**: Fixed channel type assertions to use `TextChannel | NewsChannel` instead of `TextBasedChannel`
+
+5. **ActionRowBuilder Typing**: Updated all ActionRowBuilder instances to use proper generic typing:
+   ```typescript
+   new ActionRowBuilder<import('discord.js').ButtonBuilder>()
+   ```
+
+6. **Data Type Safety**: Added proper type checking for WebSocket data and session handling
+
+**Files Modified:**
+- `lib/services/discord.ts`
+- `lib/services/discord-server.ts`
+- `lib/services/discord-simple.ts`
+
+**Verification:** Build now completes successfully with exit code 0 and only ESLint warnings (no TypeScript compilation errors).
+
+**Resolution Date:** January 8, 2025
+
 ## Current Issues
 
 ### Issue: Project Column Shows Relation IDs Instead of Names ✅ SOLVED

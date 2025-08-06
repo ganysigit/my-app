@@ -5,7 +5,7 @@ import { EventEmitter } from 'events';
 
 interface DiscordMessage {
   op: number;
-  d?: any;
+  d?: Record<string, unknown>;
   s?: number;
   t?: string;
 }
@@ -107,7 +107,9 @@ export class SimpleDiscordClient extends EventEmitter {
 
     switch (op) {
       case 10: // Hello
-        this.startHeartbeat(d.heartbeat_interval);
+        if (d && typeof d === 'object' && 'heartbeat_interval' in d) {
+          this.startHeartbeat(d.heartbeat_interval as number);
+        }
         this.identify();
         break;
 
@@ -116,7 +118,9 @@ export class SimpleDiscordClient extends EventEmitter {
         break;
 
       case 0: // Dispatch
-        this.handleDispatch(t!, d);
+        if (d) {
+          this.handleDispatch(t!, d);
+        }
         break;
 
       default:
@@ -124,10 +128,10 @@ export class SimpleDiscordClient extends EventEmitter {
     }
   }
 
-  private handleDispatch(eventType: string, data: any): void {
+  private handleDispatch(eventType: string, data: Record<string, unknown>): void {
     switch (eventType) {
       case 'READY':
-        this.sessionId = data.session_id;
+        this.sessionId = typeof data.session_id === 'string' ? data.session_id : null;
         this.isReady = true;
         console.log('Discord client ready!');
         this.emit('ready');

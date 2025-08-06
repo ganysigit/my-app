@@ -8,10 +8,10 @@ export interface DiscordIssueMessage {
 }
 
 export class DiscordService {
-  private client: any;
+  private client: import('discord.js').Client | null = null;
   private channel: DiscordChannel;
   private isReady: boolean = false;
-  private discordModule: any;
+  private discordModule: typeof import('discord.js') | null = null;
 
   constructor(channel: DiscordChannel) {
     this.channel = channel;
@@ -52,7 +52,7 @@ export class DiscordService {
           GatewayIntentBits.MessageContent,
         ],
         ws: {
-          compress: false, // Disable compression to avoid zlib-sync dependency
+          // WebSocket options without compression
         },
       });
 
@@ -73,6 +73,9 @@ export class DiscordService {
    */
   private waitForReady(): Promise<void> {
     return new Promise((resolve) => {
+      if (!this.client) {
+        throw new Error('Discord client is not initialized');
+      }
       if (this.client.isReady()) {
         resolve();
       } else {
@@ -85,8 +88,11 @@ export class DiscordService {
    * Set up event handlers
    */
   private setupEventHandlers(): void {
+    if (!this.client) {
+      throw new Error('Discord client is not initialized');
+    }
     this.client.on('ready', () => {
-      console.log(`Discord bot logged in as ${this.client.user?.tag}`);
+      console.log(`Discord bot logged in as ${this.client?.user?.tag}`);
     });
 
     this.client.on('error', (error: Error) => {
@@ -101,9 +107,13 @@ export class DiscordService {
   /**
    * Get the Discord channel
    */
-  private async getChannel(): Promise<any> {
+  private async getChannel(): Promise<import('discord.js').TextChannel | import('discord.js').NewsChannel> {
     if (!this.isReady) {
       throw new Error('Discord client is not ready');
+    }
+
+    if (!this.client) {
+      throw new Error('Discord client is not initialized');
     }
 
     const channel = await this.client.channels.fetch(this.channel.channelId);
@@ -111,7 +121,11 @@ export class DiscordService {
       throw new Error(`Channel ${this.channel.channelId} not found`);
     }
 
-    return channel;
+    if (!channel.isTextBased() || channel.isDMBased()) {
+      throw new Error(`Channel ${this.channel.channelId} is not a guild text channel`);
+    }
+
+    return channel as import('discord.js').TextChannel | import('discord.js').NewsChannel;
   }
 
   /**
@@ -136,13 +150,13 @@ export class DiscordService {
     const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = discord;
 
     const embed = new EmbedBuilder()
-      .setTitle(issue.title)
-      .setDescription(issue.description || 'No description provided')
+      .setTitle(issue.bugName)
+      .setDescription(issue.bugDescription || 'No description provided')
       .setColor(this.getStatusColor(issue.status))
       .addFields(
         { name: 'Status', value: issue.status, inline: true },
-        { name: 'Priority', value: issue.priority || 'Not set', inline: true },
-        { name: 'Assignee', value: issue.assignee || 'Unassigned', inline: true }
+        { name: 'Severity', value: issue.severity || 'Not set', inline: true },
+        { name: 'Project', value: issue.project || 'Not assigned', inline: true }
       )
       .setTimestamp()
       .setFooter({ text: 'Notion Issue Tracker' });
@@ -151,7 +165,7 @@ export class DiscordService {
       embed.setURL(issue.url);
     }
 
-    const row = new ActionRowBuilder()
+    const row = new ActionRowBuilder<import('discord.js').ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
           .setLabel('View in Notion')
@@ -193,13 +207,13 @@ export class DiscordService {
     const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = discord;
 
     const embed = new EmbedBuilder()
-      .setTitle(issue.title)
-      .setDescription(issue.description || 'No description provided')
+      .setTitle(issue.bugName)
+      .setDescription(issue.bugDescription || 'No description provided')
       .setColor(this.getStatusColor(issue.status))
       .addFields(
         { name: 'Status', value: issue.status, inline: true },
-        { name: 'Priority', value: issue.priority || 'Not set', inline: true },
-        { name: 'Assignee', value: issue.assignee || 'Unassigned', inline: true }
+        { name: 'Severity', value: issue.severity || 'Not set', inline: true },
+        { name: 'Project', value: issue.project || 'Not assigned', inline: true }
       )
       .setTimestamp()
       .setFooter({ text: 'Notion Issue Tracker (Updated)' });
@@ -208,7 +222,7 @@ export class DiscordService {
       embed.setURL(issue.url);
     }
 
-    const row = new ActionRowBuilder()
+    const row = new ActionRowBuilder<import('discord.js').ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
           .setLabel('View in Notion')

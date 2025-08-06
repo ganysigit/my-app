@@ -13,10 +13,10 @@ export interface DiscordIssueMessage {
  * This prevents Next.js from trying to bundle Discord.js for the client
  */
 export class DiscordServerService {
-  private client: any;
+  private client: import('discord.js').Client | null = null;
   private channel: DiscordChannel;
   private isReady: boolean = false;
-  private discordModule: any;
+  private discordModule: typeof import('discord.js') | null = null;
 
   constructor(channel: DiscordChannel) {
     this.channel = channel;
@@ -63,23 +63,26 @@ export class DiscordServerService {
     try {
       // Load discord.js dynamically
       const discord = await this.loadDiscordModule();
+      if (!discord) {
+        throw new Error('Failed to load Discord module');
+      }
       const { Client, GatewayIntentBits } = discord;
 
-      // Create the client with compression disabled to avoid zlib-sync
+      // Create the client
       this.client = new Client({
         intents: [
           GatewayIntentBits.Guilds,
           GatewayIntentBits.GuildMessages,
           GatewayIntentBits.MessageContent,
         ],
-        ws: {
-          compress: false, // Disable compression to avoid zlib-sync dependency
-        },
       });
 
       // Set up event handlers after client creation
       this.setupEventHandlers();
 
+      if (!this.client) {
+        throw new Error('Discord client is not initialized');
+      }
       await this.client.login(this.channel.botToken);
       await this.waitForReady();
       this.isReady = true;
@@ -94,6 +97,9 @@ export class DiscordServerService {
    */
   private waitForReady(): Promise<void> {
     return new Promise((resolve) => {
+      if (!this.client) {
+        throw new Error('Discord client is not initialized');
+      }
       if (this.client.isReady()) {
         resolve();
       } else {
@@ -106,8 +112,11 @@ export class DiscordServerService {
    * Set up event handlers
    */
   private setupEventHandlers(): void {
+    if (!this.client) {
+      throw new Error('Discord client is not initialized');
+    }
     this.client.on('ready', () => {
-      console.log(`Discord bot logged in as ${this.client.user?.tag}`);
+      console.log(`Discord bot logged in as ${this.client?.user?.tag}`);
     });
 
     this.client.on('error', (error: Error) => {
@@ -129,11 +138,13 @@ export class DiscordServerService {
 
     try {
       const discord = await this.loadDiscordModule();
+      if (!discord) {
+        throw new Error('Failed to load Discord module');
+      }
       const { Client, GatewayIntentBits } = discord;
 
       const testClient = new Client({
-        intents: [GatewayIntentBits.Guilds],
-        ws: { compress: false }
+        intents: [GatewayIntentBits.Guilds]
       });
 
       await testClient.login(this.channel.botToken);
@@ -171,12 +182,16 @@ export class DiscordServerService {
     }
 
     try {
+      if (!this.client) {
+        throw new Error('Discord client is not initialized');
+      }
       const channel = await this.client.channels.fetch(this.channel.channelId);
       if (!channel || !channel.isTextBased()) {
         throw new Error('Invalid channel or channel is not text-based');
       }
 
-      const message = await channel.send(content);
+      const textChannel = channel as import('discord.js').TextChannel | import('discord.js').NewsChannel;
+      const message = await textChannel.send(content);
       return {
         messageId: message.id,
         channelId: this.channel.channelId,
@@ -201,6 +216,9 @@ export class DiscordServerService {
     }
 
     try {
+      if (!this.client) {
+        throw new Error('Discord client is not initialized');
+      }
       const channel = await this.client.channels.fetch(this.channel.channelId);
       if (!channel || !channel.isTextBased()) {
         throw new Error('Invalid channel or channel is not text-based');
@@ -228,6 +246,9 @@ export class DiscordServerService {
     }
 
     try {
+      if (!this.client) {
+        throw new Error('Discord client is not initialized');
+      }
       const channel = await this.client.channels.fetch(this.channel.channelId);
       if (!channel || !channel.isTextBased()) {
         throw new Error('Invalid channel or channel is not text-based');

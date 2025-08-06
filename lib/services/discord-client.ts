@@ -5,16 +5,14 @@ import { Client, GatewayIntentBits } from 'discord.js';
  */
 export function createDiscordClient(options: {
   intents: GatewayIntentBits[];
-  ws?: any;
+  ws?: Record<string, unknown>;
 }) {
   try {
     // Create client with minimal WebSocket options to avoid zlib-sync dependency
     const client = new Client({
       intents: options.intents,
       ws: {
-        // Disable compression to avoid zlib-sync dependency
-        compress: false,
-        // Set other WebSocket options
+        // Set WebSocket options
         ...options.ws
       },
     });
@@ -31,7 +29,7 @@ export function createDiscordClient(options: {
  */
 export async function createDiscordClientSafe(options: {
   intents: GatewayIntentBits[];
-  ws?: any;
+  ws?: Record<string, unknown>;
 }) {
   try {
     return createDiscordClient(options);
