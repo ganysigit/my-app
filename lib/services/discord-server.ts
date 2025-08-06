@@ -191,7 +191,10 @@ export class DiscordServerService {
       }
 
       const textChannel = channel as import('discord.js').TextChannel | import('discord.js').NewsChannel;
-      const message = await textChannel.send(content);
+      const message = await textChannel.send({
+        content: content,
+        flags: ['SuppressEmbeds']
+      });
       return {
         messageId: message.id,
         channelId: this.channel.channelId,
@@ -225,7 +228,10 @@ export class DiscordServerService {
       }
 
       const message = await channel.messages.fetch(messageId);
-      await message.edit(content);
+      await message.edit({
+        content: content,
+        flags: ['SuppressEmbeds']
+      });
       return true;
     } catch (error) {
       console.error('Failed to update Discord message:', error);
@@ -264,30 +270,147 @@ export class DiscordServerService {
   }
 
   /**
-   * Format a Notion issue as a Discord message
+   * Get status color for embeds
    */
-  formatIssueMessage(issue: NotionIssue): string {
-    const status = issue.status || 'Unknown';
-    const severity = issue.severity || 'Medium';
-    const project = issue.project || 'No Project';
-    
-    let message = `**${issue.bugName}**\n`;
-    message += `📋 **Status:** ${status}\n`;
-    message += `🔥 **Severity:** ${severity}\n`;
-    message += `📁 **Project:** ${project}\n`;
-    
-    if (issue.bugDescription) {
-      const truncatedDesc = issue.bugDescription.length > 200 
-        ? issue.bugDescription.substring(0, 200) + '...' 
-        : issue.bugDescription;
-      message += `📝 **Description:** ${truncatedDesc}\n`;
+  private getStatusColor(status: string): number {
+    switch (status?.toLowerCase()) {
+      case 'open':
+      case 'in progress':
+        return 0x3498db; // Blue
+      case 'resolved':
+      case 'done':
+        return 0x2ecc71; // Green
+      case 'blocked':
+      case 'critical':
+        return 0xe74c3c; // Red
+      case 'pending':
+      case 'review':
+        return 0xf39c12; // Orange
+      default:
+        return 0x95a5a6; // Gray
     }
-    
-    if (issue.url) {
-      message += `🔗 **Link:** ${issue.url}`;
+  }
+
+  /**
+   * Send an embed message for a Notion issue
+   */
+  async sendIssueEmbed(issue: NotionIssue): Promise<DiscordIssueMessage | null> {
+    try {
+      await this.initialize();
+      
+      if (!this.client || !this.isReady) {
+        console.error('Discord client not ready');
+        return null;
+      }
+
+      const textChannel = await this.client.channels.fetch(this.channel.channelId) as import('discord.js').TextChannel;
+      if (!textChannel) {
+        console.error('Channel not found');
+        return null;
+      }
+
+      const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = this.discordModule!;
+
+      const embed = new EmbedBuilder()
+        .setTitle(issue.bugName)
+        .setDescription(issue.bugDescription || 'No description provided')
+        .setColor(this.getStatusColor(issue.status))
+        .addFields(
+          { name: 'Status', value: issue.status || 'Unknown', inline: true },
+          { name: 'Severity', value: issue.severity || 'Not set', inline: true },
+          { name: 'Project', value: issue.project || 'Not assigned', inline: true }
+        )
+        .setTimestamp()
+        .setFooter({ text: 'Notion Issue Tracker' });
+
+      if (issue.url) {
+        embed.setURL(issue.url);
+      }
+
+      const row = new ActionRowBuilder<import('discord.js').ButtonBuilder>()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('View in Notion')
+            .setStyle(ButtonStyle.Link)
+            .setURL(issue.url || 'https://notion.so')
+        );
+
+      const message = await textChannel.send({
+        embeds: [embed],
+        components: [row]
+      });
+
+      return {
+        messageId: message.id,
+        channelId: textChannel.id,
+        issueId: issue.id,
+      };
+    } catch (error) {
+      console.error('Failed to send Discord embed:', error);
+      return null;
     }
-    
-    return message;
+  }
+
+  /**
+   * Update an existing embed message
+   */
+  async updateIssueEmbed(messageId: string, issue: NotionIssue): Promise<boolean> {
+    try {
+      await this.initialize();
+      
+      if (!this.client || !this.isReady) {
+        console.error('Discord client not ready');
+        return false;
+      }
+
+      const textChannel = await this.client.channels.fetch(this.channel.channelId) as import('discord.js').TextChannel;
+      if (!textChannel) {
+        console.error('Channel not found');
+        return false;
+      }
+
+      const message = await textChannel.messages.fetch(messageId);
+      if (!message) {
+        console.error('Message not found');
+        return false;
+      }
+
+      const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = this.discordModule!;
+
+      const embed = new EmbedBuilder()
+        .setTitle(issue.bugName)
+        .setDescription(issue.bugDescription || 'No description provided')
+        .setColor(this.getStatusColor(issue.status))
+        .addFields(
+          { name: 'Status', value: issue.status || 'Unknown', inline: true },
+          { name: 'Severity', value: issue.severity || 'Not set', inline: true },
+          { name: 'Project', value: issue.project || 'Not assigned', inline: true }
+        )
+        .setTimestamp()
+        .setFooter({ text: 'Notion Issue Tracker' });
+
+      if (issue.url) {
+        embed.setURL(issue.url);
+      }
+
+      const row = new ActionRowBuilder<import('discord.js').ButtonBuilder>()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('View in Notion')
+            .setStyle(ButtonStyle.Link)
+            .setURL(issue.url || 'https://notion.so')
+        );
+
+      await message.edit({
+        embeds: [embed],
+        components: [row]
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Failed to update Discord embed:', error);
+      return false;
+    }
   }
 
   /**
@@ -295,10 +418,8 @@ export class DiscordServerService {
    */
   async postIssue(issue: NotionIssue): Promise<string | null> {
     console.log(`Discord postIssue called for issue: ${issue.id}`);
-    const content = this.formatIssueMessage(issue);
-    console.log(`Formatted Discord message content: ${content.substring(0, 100)}...`);
-    const result = await this.sendMessage(content);
-    console.log(`Discord sendMessage result:`, result);
+    const result = await this.sendIssueEmbed(issue);
+    console.log(`Discord sendIssueEmbed result:`, result);
     return result?.messageId || null;
   }
 
@@ -306,8 +427,7 @@ export class DiscordServerService {
    * Update an existing issue message
    */
   async updateIssue(messageId: string, issue: NotionIssue): Promise<boolean> {
-    const content = this.formatIssueMessage(issue);
-    return await this.updateMessage(messageId, content);
+    return await this.updateIssueEmbed(messageId, issue);
   }
 
   /**

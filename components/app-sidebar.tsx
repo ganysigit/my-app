@@ -4,9 +4,6 @@ import * as React from "react"
 import {
   IconDashboard,
   IconDatabase,
-  IconHelp,
-  IconSearch,
-  IconSettings,
   IconBrandDiscord,
   IconBrandNotion,
   IconRefresh,
@@ -44,11 +41,6 @@ const data = {
       icon: IconRefresh,
     },
     {
-      title: "Sync Log",
-      url: "/sync-log",
-      icon: IconClockHour4,
-    },
-    {
       title: "Notion Connections",
       url: "/notion-connections",
       icon: IconBrandNotion,
@@ -62,19 +54,9 @@ const data = {
   navClouds: [],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
+      title: "Sync Log",
+      url: "/sync-log",
+      icon: IconClockHour4,
     },
   ],
 

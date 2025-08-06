@@ -94,6 +94,11 @@
 - [x] Implement grid/list view toggle for Discord channels display
 - [x] Update Discord channels UI with colored icons and improved layout
 - [x] Apply consistent shadcn/ui component patterns to Discord connections
+- [x] Remove embeds and icons from Discord messages, add spacing and dividers
+- [x] Suppress automatic Discord link embeds using SuppressEmbeds flag
+- [x] Move divider to the very top of Discord message content
+- [x] Switch back to Discord embeds for better visual presentation
+- [x] Implement sendIssueEmbed and updateIssueEmbed methods with color-coded status
 
 ## Deployment Checklist
 - [ ] Set up production environment variables
