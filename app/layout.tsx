@@ -26,18 +26,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
         <SidebarProvider
+          className="h-full"
           style={{
             "--sidebar-width": "calc(var(--spacing) * 72)",
             "--header-height": "calc(var(--spacing) * 12)",
           } as React.CSSProperties}
         >
           <AppSidebar variant="inset" />
-          <main className="flex-1">
+          <main className="flex-1 h-full">
             <SidebarTrigger className="fixed top-4 left-4 z-50 md:hidden" />
             {children}
           </main>

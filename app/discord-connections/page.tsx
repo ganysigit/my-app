@@ -6,10 +6,10 @@ import { SidebarInset } from '@/components/ui/sidebar';
 
 export default function DiscordConnectionsPage() {
   return (
-    <SidebarInset>
+    <SidebarInset className="h-full flex flex-col">
       <SiteHeader />
-      <div className="container mx-auto p-6">
-        <DiscordChannelsTab onUpdate={() => {}} />
+      <div className="container mx-auto p-6 flex-1">
+        <DiscordConnectionsTab onUpdate={() => {}} />
       </div>
     </SidebarInset>
   );
