@@ -313,7 +313,7 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
                         <SelectValue placeholder="Select Notion connection" />
                       </SelectTrigger>
                       <SelectContent>
-                        {notionConnections.map((connection) => (
+                        {notionConnections.filter(connection => connection.id && connection.id.trim() !== "").map((connection) => (
                           <SelectItem key={connection.id} value={connection.id}>
                             {connection.name}
                           </SelectItem>
@@ -337,7 +337,7 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
                         <SelectValue placeholder="Select Discord channel" />
                       </SelectTrigger>
                       <SelectContent>
-                        {discordChannels.map((channel) => (
+                        {discordChannels.filter(channel => channel.id && channel.id.trim() !== "").map((channel) => (
                           <SelectItem key={channel.id} value={channel.id}>
                             {channel.name}
                           </SelectItem>
@@ -362,7 +362,7 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Projects</SelectItem>
-                        {projects.map((project) => (
+                        {projects.filter(project => project && project.trim() !== "").map((project) => (
                           <SelectItem key={project} value={project}>
                             {project}
                           </SelectItem>

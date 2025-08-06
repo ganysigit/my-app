@@ -72,6 +72,23 @@
 - [x] Confirm all endpoints return proper responses
 - [x] Fix issue ID extraction to use actual Notion unique_id values
 - [x] Clean up debug logging and temporary files
+- [x] Fix issue ID truncation and add hyphen formatting (ISS-57 format)
+- [x] Make data table horizontally scrollable to prevent content truncation
+- [x] Remove Actions column from issues table
+- [x] Fix UI filters placement and follow shadcn/ui themes
+- [x] Implement `shadcn/ui` `dashboard-01` component patterns
+- [x] Update stats cards with modern gradient styling and container queries
+- [x] Redesign filters section with responsive layout and compact controls
+- [x] Update table section with improved spacing and modern styling
+- [x] Apply consistent `shadcn/ui` theming throughout the dashboard
+- [x] Replace template dashboard components with actual app functionality
+- [x] Integrate IssuesTab component into main dashboard page
+- [x] Remove unused template components (ChartAreaInteractive, DataTable, SectionCards)
+- [x] Update dashboard page imports and structure for app-specific functionality
+- [x] Implement shadcn/ui DataTable template for issues
+- [x] Add advanced filtering, sorting, and pagination features
+- [x] Replace custom table implementation with template-based solution
+- [x] Integrate column visibility and row selection capabilities
 
 ## Deployment Checklist
 - [ ] Set up production environment variables

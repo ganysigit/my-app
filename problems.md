@@ -49,6 +49,27 @@
 **Analysis**: Vercel cron jobs work better with instance methods for proper context and state management
 **Solution**: Added instance method `syncMapping()` to SyncService class that internally calls the static method
 
+## Problem 7: SelectItem Empty Value Error ✅ SOLVED
+**Date**: Current session
+**Error**: `A <Select.Item /> must have a value prop that is not an empty string`
+**Analysis**: The shadcn/ui DataTable template had SelectItem components with `value=" "` (space character) which violates the Select component's requirement for non-empty string values. This was causing runtime errors in the browser. The issue was caused by:
+1. Static `value=" "` (space values) in filter reset options
+2. Dynamic values from data arrays that could contain empty strings
+**Troubleshooting Steps**:
+1. Examined the error stack trace pointing to SelectItem components
+2. Located the issues-data-table.tsx file and found multiple SelectItem instances with space character values
+3. Identified that these were used for "All" filter options in status, project, severity, and sync status filters
+4. Added filtering to exclude empty strings from option arrays
+**Solution**:
+- Changed all SelectItem `value=" "` to `value="all"` for filter reset options
+- Updated Select value handling logic to use "all" as default instead of empty string
+- Modified onValueChange handlers to check for "all" value and clear filters appropriately
+- Fixed all four filter Select components: status, project, severity, and sync status
+- Added filtering to dynamic option arrays:
+  - `issues-data-table.tsx`: Filter empty strings from status, project, and severity options
+  - `sync-mappings-tab.tsx`: Filter empty IDs from connection and channel options, and empty project names
+- Added guideline to memory.md: "SelectItem components must not have empty or space-only values"
+
 ## Problem 5: Discord Connection Failed Error ✅ SOLVED
 **Date**: Current session
 **Error**: `ReferenceError: DiscordService is not defined` and `Discord connection failed` during sync operations
@@ -144,7 +165,7 @@
 - The `fetchConnections()` function handles fetching both types of connections in a single call
 - Verified fix resolves the mapping tab loading issue
 
-## Problem 9: Select.Item Empty Value Error
+## Problem 9: Select.Item Empty Value Error ✅ SOLVED
 **Error**: `Error: A <Select.Item /> must have a value prop that is not an empty string`
 **Analysis**: 
 1. The "All Projects" option in the project filter dropdown had an empty string value (`value=""`)
