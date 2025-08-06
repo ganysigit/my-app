@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Plus, Edit, Trash2, GitBranch, CheckCircle, XCircle, AlertCircle, Play } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, GitBranch, CheckCircle, XCircle, AlertCircle, Play, Search, Grid3X3, List, Filter } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -67,6 +67,9 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [syncingMappingId, setSyncingMappingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const {
     register,
@@ -249,6 +252,36 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
     setIsDialogOpen(true);
   };
 
+  const getIconColor = (mapping: SyncMapping) => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-purple-500',
+      'bg-orange-500',
+      'bg-pink-500',
+      'bg-indigo-500'
+    ];
+    const index = mapping.id.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  const filterMappings = () => {
+    return mappings.filter(mapping => {
+      const matchesSearch = mapping.notionConnectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           mapping.discordChannelName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           mapping.projectFilter.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || 
+                           (statusFilter === 'active' && mapping.isActive) ||
+                           (statusFilter === 'inactive' && !mapping.isActive);
+      
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  const filteredMappings = filterMappings();
+  const activeCount = mappings.filter(m => m.isActive).length;
+
   useEffect(() => {
     const fetchData = async () => {
       await Promise.all([
@@ -279,17 +312,17 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Sync Mappings</h2>
-          <p className="text-muted-foreground">Configure which Notion projects sync to which Discord channels</p>
+          <h1 className="text-2xl font-bold tracking-tight">Sync Mappings ({mappings.length})</h1>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} disabled={notionConnections.length === 0 || discordChannels.length === 0}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Mapping
+              Create Mapping
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -393,6 +426,57 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
         </Dialog>
       </div>
 
+      {/* Filter Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              {statusFilter === 'active' ? `Active (${activeCount})` : 
+               statusFilter === 'inactive' ? `Inactive (${mappings.length - activeCount})` :
+               `All Mappings (${mappings.length})`}
+            </h3>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search for Mapping..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {message && (
         <Alert className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
           <AlertCircle className="h-4 w-4" />
@@ -409,72 +493,87 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-        {mappings.map((mapping) => (
-          <Card key={mapping.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="flex items-center space-x-2">
-                <GitBranch className="h-4 w-4" />
-                <CardTitle className="text-sm font-medium">
-                  {mapping.notionConnectionName} → {mapping.discordChannelName}
-                </CardTitle>
+      {/* Mappings Grid */}
+      <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+        {filteredMappings.map((mapping) => (
+          <Card key={mapping.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-full ${getIconColor(mapping)} flex items-center justify-center`}>
+                    <GitBranch className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base font-semibold leading-tight">
+                      {mapping.notionConnectionName}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {mapping.projectFilter === 'all' ? 'All projects sync to' : `${mapping.projectFilter} project syncs to`} #{mapping.discordChannelName}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Badge variant={mapping.isActive ? 'default' : 'secondary'}>
-                {mapping.isActive ? (
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                ) : (
-                  <XCircle className="h-3 w-3 mr-1" />
-                )}
-                {mapping.isActive ? 'Active' : 'Inactive'}
-              </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium">Project:</span> {mapping.projectFilter}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Notion DB: {mapping.notionDatabaseId?.slice(0, 8)}...
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Discord: #{mapping.discordChannelIdValue}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Created: {new Date(mapping.createdAt).toLocaleDateString()}
-                </p>
-                <div className="flex items-center space-x-2 pt-2">
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={mapping.isActive ? 'default' : 'secondary'} className="text-xs">
+                      {mapping.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Public
+                    </Badge>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(mapping.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>Notion: {mapping.notionDatabaseId?.slice(0, 12)}...</p>
+                  <p>Discord: {mapping.discordChannelIdValue}</p>
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => runSyncForMapping(mapping.id)}
+                      disabled={!mapping.isActive || syncingMappingId === mapping.id}
+                      className="h-8 w-8 p-0"
+                    >
+                      {syncingMappingId === mapping.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Play className="h-3 w-3" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEdit(mapping)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDelete(mapping.id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => runSyncForMapping(mapping.id)}
-                    disabled={!mapping.isActive || syncingMappingId === mapping.id}
-                  >
-                    {syncingMappingId === mapping.id ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Play className="h-3 w-3" />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                    variant={mapping.isActive ? 'outline' : 'default'}
                     onClick={() => toggleActive(mapping)}
+                    className="text-xs h-7"
                   >
                     {mapping.isActive ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(mapping)}
-                  >
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(mapping.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -483,17 +582,29 @@ export function SyncMappingsTab({ onUpdate }: SyncMappingsTabProps) {
         ))}
       </div>
 
-      {mappings.length === 0 && notionConnections.length > 0 && discordChannels.length > 0 && (
+      {filteredMappings.length === 0 && mappings.length > 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8">
-            <GitBranch className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No sync mappings</h3>
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No mappings found</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Create your first sync mapping to connect Notion projects with Discord channels.
+              Try adjusting your search or filter criteria.
             </p>
-            <Button onClick={openCreateDialog}>
+          </CardContent>
+        </Card>
+      )}
+      
+      {mappings.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <GitBranch className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No sync mappings yet</h3>
+            <p className="text-muted-foreground text-center mb-6 max-w-md">
+              Create your first sync mapping to start syncing data between Notion and Discord. Connect your databases and channels to automate your workflow.
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)} size="lg">
               <Plus className="h-4 w-4 mr-2" />
-              Add Mapping
+              Create Mapping
             </Button>
           </CardContent>
         </Card>

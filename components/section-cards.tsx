@@ -12,7 +12,7 @@ import {
 
 async function getDashboardStats() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/dashboard/stats`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/dashboard/stats`, {
       cache: 'no-store'
     })
     if (!response.ok) {

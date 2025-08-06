@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Plus, Edit, Trash2, Database, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, Database, CheckCircle, XCircle, AlertCircle, Search, Grid3X3, List, Filter } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,15 +42,44 @@ export function NotionConnectionsTab({ onUpdate }: NotionConnectionsTabProps) {
   const [editingConnection, setEditingConnection] = useState<NotionConnection | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ConnectionFormData>({
+  const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<ConnectionFormData>({
     resolver: zodResolver(connectionSchema),
   });
+
+  // Helper function to get icon color based on connection ID
+  const getIconColor = (id: string) => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-purple-500',
+      'bg-orange-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-red-500',
+      'bg-yellow-500'
+    ];
+    const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  };
+
+  // Filter connections based on search and status
+  const filterConnections = (connections: NotionConnection[]) => {
+    return connections.filter(connection => {
+      const matchesSearch = connection.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           connection.databaseId.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || 
+                           (statusFilter === 'active' && connection.isActive) ||
+                           (statusFilter === 'inactive' && !connection.isActive);
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  const filteredConnections = filterConnections(connections);
+  const activeCount = connections.filter(c => c.isActive).length;
 
   const fetchConnections = async () => {
     try {
@@ -184,17 +214,16 @@ export function NotionConnectionsTab({ onUpdate }: NotionConnectionsTabProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Notion Connections</h2>
-          <p className="text-muted-foreground">Manage your Notion database connections</p>
-        </div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Notion Connections ({connections.length})
+        </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Connection
+              Create Connection
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -259,6 +288,60 @@ export function NotionConnectionsTab({ onUpdate }: NotionConnectionsTabProps) {
         </Dialog>
       </div>
 
+      {/* Filter and Search Section */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <span>{activeCount} active</span>
+          <span>{connections.length - activeCount} inactive</span>
+          <span>{connections.length} total</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <div className="flex items-center border rounded-md">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="rounded-r-none"
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="rounded-l-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search connections..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+          <SelectTrigger className="w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Connections</SelectItem>
+            <SelectItem value="active">Active Only</SelectItem>
+            <SelectItem value="inactive">Inactive Only</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {message && (
         <Alert className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
           <AlertCircle className="h-4 w-4" />
@@ -266,36 +349,54 @@ export function NotionConnectionsTab({ onUpdate }: NotionConnectionsTabProps) {
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {connections.map((connection) => (
-          <Card key={connection.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="flex items-center space-x-2">
-                <Database className="h-4 w-4" />
-                <CardTitle className="text-sm font-medium">{connection.name}</CardTitle>
+      {/* Connections Grid */}
+      <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+        {filteredConnections.map((connection) => (
+          <Card key={connection.id} className="group hover:shadow-md transition-shadow duration-200">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ${getIconColor(connection.id)} flex items-center justify-center`}>
+                    <Database className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg font-semibold truncate">{connection.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Database connection for Notion sync
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(connection.createdAt).toLocaleDateString()}
+                </div>
               </div>
-              <Badge variant={connection.isActive ? 'default' : 'secondary'}>
-                {connection.isActive ? (
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                ) : (
-                  <XCircle className="h-3 w-3 mr-1" />
-                )}
-                {connection.isActive ? 'Active' : 'Inactive'}
-              </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Database: {connection.databaseId.slice(0, 8)}...
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Created: {new Date(connection.createdAt).toLocaleDateString()}
-                </p>
-                <div className="flex items-center space-x-2">
+            <CardContent className="pt-0">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant={connection.isActive ? 'default' : 'secondary'} className="text-xs">
+                    {connection.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    Public
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="text-sm">
+                    <span className="font-medium">Database ID:</span>
+                    <span className="ml-2 text-muted-foreground font-mono text-xs">
+                      {connection.databaseId.slice(0, 12)}...
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={connection.isActive ? 'outline' : 'default'}
                     onClick={() => toggleActive(connection)}
+                    className="flex-1"
                   >
                     {connection.isActive ? 'Deactivate' : 'Activate'}
                   </Button>
@@ -304,14 +405,14 @@ export function NotionConnectionsTab({ onUpdate }: NotionConnectionsTabProps) {
                     variant="outline"
                     onClick={() => handleEdit(connection)}
                   >
-                    <Edit className="h-3 w-3" />
+                    <Edit className="h-4 w-4" />
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleDelete(connection.id)}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -320,17 +421,30 @@ export function NotionConnectionsTab({ onUpdate }: NotionConnectionsTabProps) {
         ))}
       </div>
 
+      {/* Empty States */}
+      {filteredConnections.length === 0 && connections.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No connections found</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Try adjusting your search criteria or filters.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {connections.length === 0 && (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            <Database className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Notion connections</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Add your first Notion database connection to start syncing issues.
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Database className="h-16 w-16 text-muted-foreground mb-6" />
+            <h3 className="text-xl font-semibold mb-2">No Notion connections</h3>
+            <p className="text-muted-foreground text-center mb-6 max-w-md">
+              Add your first Notion database connection to start syncing issues with Discord.
             </p>
-            <Button onClick={openCreateDialog}>
+            <Button onClick={() => setIsDialogOpen(true)} size="lg">
               <Plus className="h-4 w-4 mr-2" />
-              Add Connection
+              Create Connection
             </Button>
           </CardContent>
         </Card>

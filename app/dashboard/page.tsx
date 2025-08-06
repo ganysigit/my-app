@@ -5,7 +5,7 @@ import { SidebarInset } from "@/components/ui/sidebar"
 
 async function getIssues() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/issues`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/issues`, {
       cache: 'no-store'
     })
     if (!response.ok) {

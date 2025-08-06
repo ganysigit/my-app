@@ -4,9 +4,9 @@ import path from 'path';
 const nextConfig: NextConfig = {
   // Fix cross-origin warnings for development
   allowedDevOrigins: [
-    '192.168.18.4:3001',
-    'localhost:3001',
-    '127.0.0.1:3001'
+    '192.168.18.4:3000',
+    'localhost:3000',
+    '127.0.0.1:3000'
   ],
   
   // Optimize for better performance
