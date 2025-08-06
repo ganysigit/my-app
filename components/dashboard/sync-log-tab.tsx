@@ -170,7 +170,92 @@ export function SyncLogTab() {
 
   return (
     <div className="space-y-6">
+      {/* Sync Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Successful Operations Card */}
+        <Card className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6">
+          <CardHeader className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <IconCheck className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="leading-none font-semibold">Successful</CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">Completed operations</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="flex items-baseline gap-2">
+              <div className="text-3xl font-bold text-green-600">
+                {logs.filter(log => log.status === 'success').length}
+              </div>
+              <div className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                {Math.round((logs.filter(log => log.status === 'success').length / logs.length) * 100)}%
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              Operations completed successfully
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* Failed Operations Card */}
+        <Card className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6">
+          <CardHeader className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <IconX className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <CardTitle className="leading-none font-semibold">Failed</CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">Operations with errors</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="flex items-baseline gap-2">
+              <div className="text-3xl font-bold text-red-600">
+                {logs.filter(log => log.status === 'error').length}
+              </div>
+              <div className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                {Math.round((logs.filter(log => log.status === 'error').length / logs.length) * 100)}%
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              Operations that encountered errors
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Operations Card */}
+        <Card className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6">
+          <CardHeader className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <IconClock className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <CardTitle className="leading-none font-semibold">Pending</CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">In progress operations</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="flex items-baseline gap-2">
+              <div className="text-3xl font-bold text-yellow-600">
+                {logs.filter(log => log.status === 'pending').length}
+              </div>
+              <div className="text-sm text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
+                {Math.round((logs.filter(log => log.status === 'pending').length / logs.length) * 100)}%
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              Operations in queue
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
