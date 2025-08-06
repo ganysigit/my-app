@@ -89,6 +89,11 @@
 - [x] Add advanced filtering, sorting, and pagination features
 - [x] Replace custom table implementation with template-based solution
 - [x] Integrate column visibility and row selection capabilities
+- [x] Redesign Discord connections page to match sync mappings structure
+- [x] Add search functionality and status filtering to Discord channels
+- [x] Implement grid/list view toggle for Discord channels display
+- [x] Update Discord channels UI with colored icons and improved layout
+- [x] Apply consistent shadcn/ui component patterns to Discord connections
 
 ## Deployment Checklist
 - [ ] Set up production environment variables

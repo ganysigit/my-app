@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Plus, Edit, Trash2, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, MessageSquare, CheckCircle, XCircle, AlertCircle, Search, Grid3X3, List, Filter } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,6 +44,9 @@ export function DiscordChannelsTab({ onUpdate }: DiscordChannelsTabProps) {
   const [editingChannel, setEditingChannel] = useState<DiscordChannel | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const {
     register,
@@ -166,6 +170,36 @@ export function DiscordChannelsTab({ onUpdate }: DiscordChannelsTabProps) {
     setIsDialogOpen(true);
   };
 
+  const getIconColor = (channel: DiscordChannel) => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-purple-500',
+      'bg-orange-500',
+      'bg-pink-500',
+      'bg-indigo-500'
+    ];
+    const index = channel.id.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  const filterChannels = () => {
+    return channels.filter(channel => {
+      const matchesSearch = channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           channel.channelId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           channel.guildId.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || 
+                           (statusFilter === 'active' && channel.isActive) ||
+                           (statusFilter === 'inactive' && !channel.isActive);
+      
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  const filteredChannels = filterChannels();
+  const activeCount = channels.filter(c => c.isActive).length;
+
   useEffect(() => {
     fetchChannels();
   }, []);
@@ -187,17 +221,19 @@ export function DiscordChannelsTab({ onUpdate }: DiscordChannelsTabProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Discord Channels</h2>
-          <p className="text-muted-foreground">Manage your Discord channel connections</p>
+          <p className="text-muted-foreground">
+            {activeCount} of {channels.length} channels active
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Channel
+              Create Channel
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -273,6 +309,48 @@ export function DiscordChannelsTab({ onUpdate }: DiscordChannelsTabProps) {
         </Dialog>
       </div>
 
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search channels..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+            <SelectTrigger className="w-[140px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       {message && (
         <Alert className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
           <AlertCircle className="h-4 w-4" />
@@ -280,62 +358,144 @@ export function DiscordChannelsTab({ onUpdate }: DiscordChannelsTabProps) {
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {channels.map((channel) => (
-          <Card key={channel.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-4 w-4" />
-                <CardTitle className="text-sm font-medium">{channel.name}</CardTitle>
-              </div>
-              <Badge variant={channel.isActive ? 'default' : 'secondary'}>
-                {channel.isActive ? (
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                ) : (
-                  <XCircle className="h-3 w-3 mr-1" />
-                )}
-                {channel.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Channel: {channel.channelId}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Guild: {channel.guildId}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Created: {new Date(channel.createdAt).toLocaleDateString()}
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toggleActive(channel)}
-                  >
-                    {channel.isActive ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(channel)}
-                  >
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(channel.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
+      <div className={viewMode === 'grid' ? 'grid gap-4 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
+        {filteredChannels.map((channel) => (
+          <Card key={channel.id} className={viewMode === 'list' ? 'flex flex-row items-center' : ''}>
+            {viewMode === 'grid' ? (
+              <>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-lg ${getIconColor(channel)} flex items-center justify-center`}>
+                      <MessageSquare className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{channel.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">Discord Channel</p>
+                    </div>
+                  </div>
+                  <Badge variant={channel.isActive ? 'default' : 'secondary'}>
+                    {channel.isActive ? (
+                      <>
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Active
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Inactive
+                      </>
+                    )}
+                  </Badge>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Channel ID:</span>
+                      <span className="ml-2 text-muted-foreground font-mono">{channel.channelId}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Guild ID:</span>
+                      <span className="ml-2 text-muted-foreground font-mono">{channel.guildId}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Created:</span>
+                      <span className="ml-2 text-muted-foreground">
+                        {new Date(channel.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center mt-4">
+                    <Button
+                       variant={channel.isActive ? 'outline' : 'default'}
+                       size="sm"
+                       onClick={() => toggleChannelActive(channel.id)}
+                     >
+                       {channel.isActive ? 'Deactivate' : 'Activate'}
+                     </Button>
+                     <div className="flex space-x-2">
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => openEditDialog(channel)}
+                       >
+                         <Edit className="h-4 w-4" />
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => deleteChannel(channel.id)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
+                  </div>
+                </CardContent>
+              </>
+            ) : (
+              <>
+                <CardContent className="flex items-center justify-between w-full p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-10 h-10 rounded-lg ${getIconColor(channel)} flex items-center justify-center`}>
+                      <MessageSquare className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="font-semibold">{channel.name}</h3>
+                        <Badge variant={channel.isActive ? 'default' : 'secondary'} className="text-xs">
+                          {channel.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
+                        <span>Channel: <span className="font-mono">{channel.channelId}</span></span>
+                        <span>Guild: <span className="font-mono">{channel.guildId}</span></span>
+                        <span>Created: {new Date(channel.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                     <Button
+                       variant={channel.isActive ? 'outline' : 'default'}
+                       size="sm"
+                       onClick={() => toggleChannelActive(channel.id)}
+                     >
+                       {channel.isActive ? 'Deactivate' : 'Activate'}
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => openEditDialog(channel)}
+                     >
+                       <Edit className="h-4 w-4" />
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => deleteChannel(channel.id)}
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   </div>
+                </CardContent>
+              </>
+            )}
           </Card>
         ))}
       </div>
+
+      {filteredChannels.length === 0 && channels.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No channels found</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              No channels match your current search and filter criteria.
+            </p>
+            <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {channels.length === 0 && (
         <Card>

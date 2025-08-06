@@ -389,3 +389,18 @@ The bot should now appear online in Discord and maintain proper connectivity for
 **Verification**: After the sync, issues now display proper Notion IDs like ISS57, ISS60, ISS61, ISS71, ISS72, etc. instead of generated IDs.
 
 **Resolution Date**: January 8, 2025
+
+## Problem 15: Production Server Crash with routesManifest.dataRoutes Error ✅ SOLVED
+
+**Problem**: Production server was crashing with error `TypeError: routesManifest.dataRoutes is not iterable` and network requests to `/notion-connections?_rsc=1wcdu` were being aborted.
+
+**Root Cause**: Corrupted Next.js build cache in the `.next` directory causing invalid routes manifest.
+
+**Solution Applied**:
+1. Removed the corrupted `.next` build directory using `Remove-Item -Recurse -Force .next`
+2. Rebuilt the project using `npm run build`
+3. Restarted the production server using `npm start`
+
+**Result**: Production server now runs successfully without crashes and all routes are accessible.
+
+**Resolution Date**: January 8, 2025
