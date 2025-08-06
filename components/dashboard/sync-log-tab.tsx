@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { IconRefresh, IconCheck, IconX, IconClock } from '@tabler/icons-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { IconRefresh, IconCheck, IconX, IconClock, IconArrowRight, IconDatabase, IconBrandDiscord, IconCalendar, IconUser } from '@tabler/icons-react';
 
 interface SyncLogEntry {
   id: string;
@@ -60,15 +61,73 @@ const mockSyncLogs: SyncLogEntry[] = [
   },
   {
     id: '5',
-    timestamp: '2024-01-15 14:10:18',
+    timestamp: '2024-01-14 18:10:18',
     operation: 'Bulk Import',
     status: 'success',
     source: 'Notion Database',
     target: 'Discord Channel #archive',
     details: 'Imported 127 historical records',
     duration: 15.2
+  },
+  {
+    id: '6',
+    timestamp: '2024-01-14 16:45:30',
+    operation: 'Auto Sync',
+    status: 'success',
+    source: 'Discord Channel #general',
+    target: 'Notion Database',
+    details: 'Automated sync completed successfully',
+    duration: 3.1
   }
 ];
+
+// Helper function to group logs by date
+function groupLogsByDate(logs: SyncLogEntry[]) {
+  const groups: { [key: string]: SyncLogEntry[] } = {};
+  
+  logs.forEach(log => {
+    const date = new Date(log.timestamp).toDateString();
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(log);
+  });
+  
+  return groups;
+}
+
+// Helper function to format date
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  if (date.toDateString() === today.toDateString()) {
+    return 'Today';
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  } else {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long' 
+    });
+  }
+}
+
+// Helper function to get operation icon
+function getOperationIcon(operation: string) {
+  if (operation.includes('Scheduled') || operation.includes('Auto')) {
+    return <IconCalendar className="h-4 w-4" />;
+  } else if (operation.includes('Manual') || operation.includes('Bulk')) {
+    return <IconUser className="h-4 w-4" />;
+  } else if (operation.includes('Discord')) {
+    return <IconBrandDiscord className="h-4 w-4" />;
+  } else {
+    return <IconDatabase className="h-4 w-4" />;
+  }
+}
 
 function getStatusIcon(status: SyncLogEntry['status']) {
   switch (status) {
@@ -106,59 +165,100 @@ export function SyncLogTab() {
     setIsRefreshing(false);
   };
 
+  const groupedLogs = groupLogsByDate(logs);
+  const sortedDates = Object.keys(groupedLogs).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Sync Log</h1>
-          <p className="text-muted-foreground">
-            Monitor and track all synchronization operations between Notion and Discord.
-          </p>
-        </div>
-        <Button onClick={handleRefresh} disabled={isRefreshing}>
-          <IconRefresh className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Recent Sync Operations</CardTitle>
-          <CardDescription>
-            Latest synchronization activities and their status
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-semibold">Sync History</CardTitle>
+              <CardDescription>
+                Monitor and track all synchronization operations between Notion and Discord
+              </CardDescription>
+            </div>
+            <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm">
+              <IconRefresh className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {logs.map((log) => (
-              <div
-                key={log.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center space-x-4">
-                  {getStatusIcon(log.status)}
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <p className="font-medium">{log.operation}</p>
-                      {getStatusBadge(log.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {log.source} → {log.target}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{log.details}</p>
-                  </div>
+        <CardContent className="space-y-6">
+          {sortedDates.map((dateString) => {
+            const dateEntries = groupedLogs[dateString].sort((a, b) => 
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+            
+            return (
+              <div key={dateString} className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <span>{formatDate(dateString)}</span>
+                  <span className="text-xs">{new Date(dateString).getFullYear()}</span>
                 </div>
-                <div className="text-right space-y-1">
-                  <p className="text-sm font-mono">{log.timestamp}</p>
-                  {log.duration && (
-                    <p className="text-xs text-muted-foreground">
-                      {log.duration}s
-                    </p>
-                  )}
+                
+                <div className="space-y-3">
+                  {dateEntries.map((log) => {
+                    const time = new Date(log.timestamp).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    });
+                    
+                    return (
+                      <div key={log.id} className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                        {/* Timestamp */}
+                        <div className="text-sm font-mono text-muted-foreground min-w-[3rem]">
+                          {time}
+                        </div>
+                        
+                        {/* Avatar/Icon */}
+                        <div className="flex-shrink-0">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-muted">
+                              {getOperationIcon(log.operation)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{log.operation}</span>
+                            {getStatusBadge(log.status)}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{log.source}</span>
+                            <IconArrowRight className="h-3 w-3" />
+                            <span>{log.target}</span>
+                          </div>
+                          
+                          {log.details && (
+                            <div className="text-sm text-muted-foreground bg-muted/30 p-2 rounded border-l-2 border-muted-foreground/20">
+                              <span className="text-xs font-medium text-muted-foreground/80">Operation details:</span>
+                              <p className="mt-1">{log.details}</p>
+                              {log.duration && (
+                                <p className="text-xs mt-1 text-muted-foreground/60">
+                                  Duration: {log.duration}s
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Status Icon */}
+                        <div className="flex-shrink-0">
+                          {getStatusIcon(log.status)}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </CardContent>
       </Card>
 
