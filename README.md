@@ -1,24 +1,27 @@
 # Notion-Discord Sync Service
 
-A full-stack Next.js application that provides two-way synchronization between Notion databases and Discord channels. The service monitors Notion databases for "open" issues and syncs them to Discord channels, allowing users to update issue statuses directly from Discord.
+A full-stack Next.js application that provides robust two-way synchronization between Notion databases and Discord channels. The service monitors Notion databases for "open" issues and syncs them to Discord channels with beautiful embeds, allowing users to update issue statuses directly from Discord with interactive buttons.
 
 ## Features
 
 - **Multi-Database Support**: Connect multiple Notion databases
 - **Multi-Channel Sync**: Sync to multiple Discord channels with project-based filtering
 - **Two-Way Sync**: Update issue status from Discord back to Notion
-- **Real-time Dashboard**: Monitor connections, sync status, and issue statistics
-- **Filtering**: Only syncs "open" status issues from Notion
-- **Interactive Discord Bot**: Mark issues as "Fixed" directly from Discord
-- **Comprehensive Logging**: Track all sync operations and errors
+- **Real-time Dashboard**: Monitor connections, sync status, and issue statistics with analytics
+- **Smart Filtering**: Only syncs "open" status issues from Notion with project-based filtering
+- **Interactive Discord Bot**: Mark issues as "Fixed" directly from Discord with button interactions
+- **Robust Error Handling**: Gracefully handles Discord message sync failures and API errors
+- **Comprehensive Logging**: Track all sync operations, errors, and recovery actions
+- **Beautiful Discord Embeds**: Rich, formatted issue displays with severity indicators
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (Full-stack)
-- **UI**: shadcn/ui + Tailwind CSS
-- **Database**: SQLite with Drizzle ORM
-- **APIs**: Notion API, Discord API
-- **Deployment**: Compatible with Cloudflare Workers
+- **Framework**: Next.js 15 (Full-stack with App Router)
+- **UI**: shadcn/ui + Tailwind CSS + Lucide Icons
+- **Database**: SQLite with Drizzle ORM and migrations
+- **APIs**: Notion API v1, Discord API v10
+- **Charts**: Recharts for analytics visualization
+- **Deployment**: Compatible with Cloudflare Workers and traditional hosting
 
 ## Prerequisites
 
@@ -196,8 +199,9 @@ Can be deployed to any Node.js hosting platform:
 
 1. **Notion API Errors**: Verify API key and database permissions
 2. **Discord Bot Errors**: Check bot token and server permissions
-3. **Sync Issues**: Review sync logs in the dashboard
-4. **Database Errors**: Ensure migrations are run correctly
+3. **Discord Message Sync Failures**: The system automatically handles "Unknown Message" errors by recreating messages
+4. **Sync Issues**: Review sync logs in the dashboard for detailed error information
+5. **Database Errors**: Ensure migrations are run correctly
 
 ### Debug Mode
 
