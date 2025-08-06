@@ -10,6 +10,7 @@ import {
   IconBrandDiscord,
   IconBrandNotion,
   IconRefresh,
+  IconClockHour4,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -41,6 +42,11 @@ const data = {
       title: "Sync Mappings",
       url: "/sync-mappings",
       icon: IconRefresh,
+    },
+    {
+      title: "Sync Log",
+      url: "/sync-log",
+      icon: IconClockHour4,
     },
     {
       title: "Notion Connections",
