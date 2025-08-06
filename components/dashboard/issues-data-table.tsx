@@ -30,7 +30,6 @@ import {
   IconDotsVertical,
   IconGripVertical,
   IconLayoutColumns,
-  IconLoader,
   IconPlus,
   IconSearch,
   IconX,
@@ -124,20 +123,7 @@ const getSeverityColor = (severity: string) => {
   }
 }
 
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'open':
-      return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
-    case 'in progress':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800'
-    case 'resolved':
-      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
-    case 'closed':
-      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800'
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800'
-  }
-}
+
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: string }) {
@@ -151,7 +137,7 @@ function DragHandle({ id }: { id: string }) {
       {...listeners}
       variant="ghost"
       size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
+      className="text-muted-foreground size-6 hover:bg-transparent"
     >
       <IconGripVertical className="text-muted-foreground size-3" />
       <span className="sr-only">Drag to reorder</span>
@@ -163,7 +149,11 @@ const columns: ColumnDef<Issue>[] = [
   {
     id: "drag",
     header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
+    cell: ({ row }) => (
+      <div className="w-6">
+        <DragHandle id={row.original.id} />
+      </div>
+    ),
   },
   {
     id: "select",
@@ -208,20 +198,7 @@ const columns: ColumnDef<Issue>[] = [
       </div>
     ),
   },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge className={getStatusColor(row.original.status)}>
-        {row.original.status === "resolved" ? (
-          <IconCircleCheckFilled className="mr-1 h-3 w-3" />
-        ) : row.original.status === "in progress" ? (
-          <IconLoader className="mr-1 h-3 w-3" />
-        ) : null}
-        {row.original.status}
-      </Badge>
-    ),
-  },
+
   {
     accessorKey: "severity",
     header: "Severity",
@@ -246,27 +223,29 @@ const columns: ColumnDef<Issue>[] = [
     accessorKey: "isSynced",
     header: "Sync Status",
     cell: ({ row }) => (
-      <Badge
-        className={
-          row.original.isSynced
-            ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-            : "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-        }
-      >
-        {row.original.isSynced ? (
-          <IconCircleCheckFilled className="mr-1 h-3 w-3" />
-        ) : (
-          <IconX className="mr-1 h-3 w-3" />
-        )}
-        {row.original.isSynced ? "Synced" : "Unsynced"}
-      </Badge>
+      <div className="w-24">
+        <Badge
+          className={
+            row.original.isSynced
+              ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
+              : "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+          }
+        >
+          {row.original.isSynced ? (
+            <IconCircleCheckFilled className="mr-1 h-3 w-3" />
+          ) : (
+            <IconX className="mr-1 h-3 w-3" />
+          )}
+          {row.original.isSynced ? "Synced" : "Unsynced"}
+        </Badge>
+      </div>
     ),
   },
   {
     accessorKey: "notionConnectionName",
     header: "Connection",
     cell: ({ row }) => (
-      <div className="text-sm text-muted-foreground">
+      <div className="w-32 text-sm text-muted-foreground truncate">
         {row.original.notionConnectionName}
       </div>
     ),
@@ -368,9 +347,7 @@ export function IssuesDataTable({ data }: IssuesDataTableProps) {
     }
   }
 
-  const uniqueStatuses = Array.from(
-    new Set(safeData.map((issue) => issue.status).filter(Boolean))
-  )
+
   const uniqueSeverities = Array.from(
     new Set(safeData.map((issue) => issue.severity).filter(Boolean))
   )
@@ -393,24 +370,7 @@ export function IssuesDataTable({ data }: IssuesDataTableProps) {
               className="pl-8 max-w-sm"
             />
           </div>
-          <Select
-            value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
-            onValueChange={(value) =>
-              table.getColumn("status")?.setFilterValue(value === "all" ? "" : value)
-            }
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {uniqueStatuses.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
           <Select
             value={(table.getColumn("severity")?.getFilterValue() as string) ?? "all"}
             onValueChange={(value) =>
